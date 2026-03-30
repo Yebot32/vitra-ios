@@ -1,8 +1,9 @@
 ![image_alt](https://github.com/Yebot32/vitra-ios/blob/39159ade3f88ff7685493cdac771f724f91bb6a8/IMG_20260330_095953.png)
 
-Vitra-iOS (Proof of Concept)
+<h1 align="center"> Vitra-iOS -
+ psvita emulator for ios </h1>
 
-Vitra-iOS is an experimental research project aimed at porting PlayStation Vita emulation to the iOS and iPadOS ecosystem. This repository serves as a technical proof of concept (PoC) to demonstrate the feasibility of Vita hardware abstraction on Apple Silicon.
+Vitra-iOS is a proof of concept experimental research project aimed at porting PlayStation Vita emulation to the iOS and iPadOS ecosystem. This repository serves as a technical proof of concept (PoC) to demonstrate the feasibility of Vita hardware abstraction on Apple Silicon.
 
 🎯 Project Goals
 The primary objective of Vitra-iOS is to bridge the gap between the Vita’s unique architecture and the modern iOS environment, specifically focusing on:
