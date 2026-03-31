@@ -182,6 +182,7 @@ id<MTLBuffer> alloc_buffer(NSUInteger byteLength, MTLResourceOptions extraOpts =
 - (instancetype)init;
 - (void)start;
 - (void)pause;
+- (void)resume;   ///< Re-enables after pause without re-registering the display link.
 - (void)invalidate;
 
 @end
