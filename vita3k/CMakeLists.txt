@@ -1,5 +1,5 @@
-set(VITA3K_ORG_NAME "Vita3K")
-set(VITA3K_APP_NAME "Vita3K")
+set(VITA3K_ORG_NAME "Vitra")
+set(VITA3K_APP_NAME "Vitra")
 set(VITA3K_APP_VER_HI 0)
 set(VITA3K_APP_VER_MID 2)
 set(VITA3K_APP_VER_LO 1)
@@ -131,6 +131,11 @@ add_subdirectory(gdbstub)
 add_subdirectory(packages)
 add_subdirectory(vkutil)
 
+# iOS-specific Metal/MoltenVK platform layer
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    add_subdirectory(ios)
+endif()
+
 if(ANDROID)
 	add_library(vita3k SHARED main.cpp interface.cpp performance.cpp)
 	target_link_libraries(vita3k PRIVATE SDL3::SDL3 android)
@@ -181,29 +186,29 @@ if(LINUX)
 	target_link_libraries(vita3k PRIVATE -static-libgcc -static-libstdc++)
 endif()
 
-set_target_properties(vita3k PROPERTIES OUTPUT_NAME Vita3K
+set_target_properties(vita3k PROPERTIES OUTPUT_NAME Vitra
 	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 	LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 if(APPLE)
 	add_custom_command(
-		OUTPUT Vita3K.icns
-		COMMAND mkdir -p Vita3K.iconset
-		COMMAND sips -z 16 16     "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_16x16.png
-		COMMAND sips -z 32 32     "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_16x16@2x.png
-		COMMAND sips -z 32 32     "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_32x32.png
-		COMMAND sips -z 64 64     "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_32x32@2x.png
-		COMMAND sips -z 128 128   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_128x128.png
-		COMMAND sips -z 256 256   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_128x128@2x.png
-		COMMAND sips -z 256 256   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_256x256.png
-		COMMAND sips -z 512 512   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_256x256@2x.png
-		COMMAND sips -z 512 512   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_512x512.png
-		COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" Vita3K.iconset/icon_512x512@2x.png
-		COMMAND iconutil -c icns Vita3K.iconset
-		COMMAND rm -r Vita3K.iconset
-		DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png")
-	set_source_files_properties(Vita3K.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+		OUTPUT Vitra.icns
+		COMMAND mkdir -p Vitra.iconset
+		COMMAND sips -z 16 16     "${CMAKE_CURRENT_SOURCE_DIR}/Vitra.png" --out Vitra.iconset/icon_16x16.png
+		COMMAND sips -z 32 32     "${CMAKE_CURRENT_SOURCE_DIR}/Vitra.png" --out Vitra.iconset/icon_16x16@2x.png
+		COMMAND sips -z 32 32     "${CMAKE_CURRENT_SOURCE_DIR}/Vitra.png" --out Vitra.iconset/icon_32x32.png
+		COMMAND sips -z 64 64     "${CMAKE_CURRENT_SOURCE_DIR}/Vitra.png" --out Vitra.iconset/icon_32x32@2x.png
+		COMMAND sips -z 128 128   "${CMAKE_CURRENT_SOURCE_DIR}/Vitra.png" --out Vitra.iconset/icon_128x128.png
+		COMMAND sips -z 256 256   "${CMAKE_CURRENT_SOURCE_DIR}/Vitra.png" --out Vitra.iconset/icon_128x128@2x.png
+		COMMAND sips -z 256 256   "${CMAKE_CURRENT_SOURCE_DIR}/Vitra.png" --out Vitra.iconset/icon_256x256.png
+		COMMAND sips -z 512 512   "${CMAKE_CURRENT_SOURCE_DIR}/Vitra.png" --out Vitra.iconset/icon_256x256@2x.png
+		COMMAND sips -z 512 512   "${CMAKE_CURRENT_SOURCE_DIR}/Vitra.png" --out Vitra.iconset/icon_512x512.png
+		COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/Vitra.png" Vitra.iconset/icon_512x512@2x.png
+		COMMAND iconutil -c icns Vitra.iconset
+		COMMAND rm -r Vitra.iconset
+		DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Vitra.png")
+	set_source_files_properties(Vitra.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 
 	add_custom_command(
 		TARGET vita3k
@@ -233,10 +238,10 @@ if(APPLE)
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${discord_dylib}" "$<TARGET_FILE_DIR:vita3k>/../Resources")
 	endif()
 	set_target_properties(vita3k PROPERTIES LINK_FLAGS "-rpath @loader_path/../Frameworks/ -rpath @loader_path/../Resources/ -ld64")
-	target_sources(vita3k PRIVATE Vita3K.icns)
-	set(MACOSX_BUNDLE_ICON_FILE Vita3K.icns)
-	set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.github.Vita3K.Vita3K")
-	set(MACOSX_BUNDLE_BUNDLE_NAME "Vita3K")
+	target_sources(vita3k PRIVATE Vitra.icns)
+	set(MACOSX_BUNDLE_ICON_FILE Vitra.icns)
+	set(MACOSX_BUNDLE_GUI_IDENTIFIER "org.vitra.app")
+	set(MACOSX_BUNDLE_BUNDLE_NAME "Vitra")
 
 	message(STATUS "MoltenVK dylib path: ${MOLTENVK_DYLIB}")
 	target_sources(vita3k PRIVATE ${MOLTENVK_DYLIB})
