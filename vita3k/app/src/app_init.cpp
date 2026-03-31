@@ -345,6 +345,12 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
     state.display.fullscreen = true;
     window_type |= SDL_WINDOW_FULLSCREEN;
+#elif TARGET_OS_IOS
+    // iOS: always landscape, always full-screen, let the CAMetalLayer handle
+    // HiDPI via SDL_WINDOW_HIGH_PIXEL_DENSITY + nativeScale in ios_platform.mm.
+    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+    state.display.fullscreen = true;
+    window_type |= SDL_WINDOW_FULLSCREEN;
 #else
     if (state.cfg.fullscreen) {
         state.display.fullscreen = true;
