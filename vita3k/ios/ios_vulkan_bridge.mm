@@ -95,7 +95,10 @@ std::vector<uint8_t> build_moltenvk_layer_settings(
     addBool("MVK_CONFIG_FULL_IMAGE_VIEW_SWIZZLE",          cfg.fullImageViewSwizzle);
     addBool("MVK_CONFIG_SYNCHRONIZE_PRESENT_ON_SUBMIT_BOUNDARY",  cfg.synchronizedPresent);
     addBool("MVK_CONFIG_USE_MTLFENCE_FOR_BARRIERS",        cfg.useMTLFenceForBarriers);
-    addBool("MVK_CONFIG_PREFILL_METAL_COMMAND_BUFFERS",    cfg.mergeSubpasses);
+    // Merge Vulkan sub-passes into fewer Metal render passes where safe.
+    // (MVK_CONFIG_PREFILL_METAL_COMMAND_BUFFERS is unrelated — it controls
+    // command-buffer pre-allocation, not render-pass merging.)
+    addBool("MVK_CONFIG_SHOULD_MAXIMIZE_CONCURRENT_COMPILATION", cfg.mergeSubpasses);
 
     addInt ("MVK_CONFIG_MAX_ACTIVE_METAL_COMMAND_BUFFERS_PER_QUEUE",
             static_cast<int32_t>(cfg.commandBufferPoolSize));

@@ -135,20 +135,23 @@ inline std::vector<const char*> get_ios_device_extensions(
     const std::vector<const char*>& baseExtensions)
 {
     auto available = physicalDevice.enumerateDeviceExtensionProperties();
+
+    // Seed with base extensions and track what is already present so we
+    // never pass duplicate names to vkCreateDevice (undefined behaviour /
+    // VK_ERROR_EXTENSION_NOT_PRESENT on strict drivers / MoltenVK).
     std::vector<const char*> result = baseExtensions;
+    std::set<std::string_view> seen;
+    for (const char* e : result) if (e) seen.insert(e);
 
     for (const char* req : ::ios::required_device_extensions()) {
-        bool found = false;
-        for (const char* e : result) {
-            if (e && std::string_view(e) == req) { found = true; break; }
-        }
-        if (!found) {
-            // Check availability
-            for (const auto& avail : available) {
-                if (std::string_view(avail.extensionName.data()) == req) {
-                    result.push_back(req);
-                    break;
-                }
+        if (!req || seen.count(req)) continue;
+
+        // Verify the extension is actually exposed by this physical device.
+        for (const auto& avail : available) {
+            if (std::string_view(avail.extensionName.data()) == req) {
+                result.push_back(req);
+                seen.insert(req);
+                break;
             }
         }
     }

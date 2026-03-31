@@ -159,10 +159,21 @@ bool VKState::create(SDL_Window* window,
             vk::EXTLayerSettingsExtensionName,
 #endif
         };
+
+        // Build a deduplicated set from what is already in the list so that
+        // ios_patch::append_ios_instance_extensions() entries (e.g.
+        // VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2) are not added twice.
+        // Duplicate extension names cause vkCreateInstance to return
+        // VK_ERROR_EXTENSION_NOT_PRESENT on strict MoltenVK builds.
+        std::set<std::string> already_added(
+            instance_extensions.begin(), instance_extensions.end());
+
         for (const auto& prop : vk::enumerateInstanceExtensionProperties()) {
-            auto it = optional_exts.find(prop.extensionName.data());
-            if (it != optional_exts.end())
-                instance_extensions.push_back(it->c_str());
+            const std::string name(prop.extensionName.data());
+            if (optional_exts.count(name) && !already_added.count(name)) {
+                instance_extensions.push_back(optional_exts.find(name)->c_str());
+                already_added.insert(name);
+            }
         }
     }
 

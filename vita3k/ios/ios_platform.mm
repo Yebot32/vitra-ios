@@ -133,6 +133,14 @@
     _isPaused = YES;
 }
 
+- (void)resume {
+    // Resume without re-adding to the run loop (start already did that).
+    // Calling start again would register a second CADisplayLink entry,
+    // causing every vblank to fire the callback twice.
+    _displayLink.paused = NO;
+    _isPaused = NO;
+}
+
 - (void)invalidate {
     [_displayLink invalidate];
 }
@@ -297,9 +305,11 @@ void platform_update_frame_pacing() {
     s.targetFrameTime = target;
     s.frameIndex++;
 
-    // Simple EWMA for average frame time
+    // Simple EWMA for average frame time — alpha=0.2 converges in ~11 frames,
+    // responsive enough to catch sudden load spikes without over-reacting to
+    // single-frame outliers.
     if (s.lastFrameDuration > 0.0) {
-        constexpr double alpha = 0.1;
+        constexpr double alpha = 0.2;
         s.averageFrameTime = alpha * s.lastFrameDuration
                            + (1.0 - alpha) * s.averageFrameTime;
     }
@@ -315,13 +325,14 @@ const FramePacingStats& get_frame_pacing() {
 
 // ---------------------------------------------------------------------------
 void optimise_device_performance(NSProcessInfoThermalState thermalState) {
-    // Adjust GPU workload tier based on thermal pressure.
-    // The emulator render thread should query get_frame_pacing().throttleRequested
-    // to decide whether to skip non-essential GPU work (e.g. post-processing).
+    // Thermal notifications fire on the main queue; platform_resize() may run
+    // concurrently on the render thread — both touch metalCtx.displayRefreshRate
+    // so we must hold the mutex.
+    std::lock_guard<std::mutex> lock(g_state.mutex);
+
     switch (thermalState) {
         case NSProcessInfoThermalStateNominal:
         case NSProcessInfoThermalStateFair:
-            // Full quality, full frame rate
             g_state.metalCtx.displayRefreshRate = g_state.displayLink
                 ? g_state.displayLink.preferredFramesPerSecond
                 : 60.0;
@@ -329,12 +340,10 @@ void optimise_device_performance(NSProcessInfoThermalState thermalState) {
             break;
 
         case NSProcessInfoThermalStateSerious:
-            // Cap to 60 Hz, may already be running at 60
             g_state.metalCtx.displayRefreshRate = 60.0;
             break;
 
         case NSProcessInfoThermalStateCritical:
-            // Drop to 30 Hz to cool down
             g_state.metalCtx.displayRefreshRate = 30.0;
             g_state.pacingStats.throttleRequested.store(true);
             break;
@@ -346,10 +355,13 @@ void optimise_device_performance(NSProcessInfoThermalState thermalState) {
 
 // ---------------------------------------------------------------------------
 void recycle_drawable() {
-    // On iOS, ARC handles drawable lifetime automatically once we stop
-    // holding a strong reference. This function is a hook for the renderer
-    // to signal it is done with the current drawable so we can update stats.
-    g_state.pacingStats.lastFrameDuration = g_state.pacingStats.targetFrameTime;
+    // Measure actual wall-clock time between successive presents so the EWMA
+    // in platform_update_frame_pacing() reflects real GPU throughput.
+    static double s_lastPresentTime = 0.0;
+    const double now = CACurrentMediaTime();
+    if (s_lastPresentTime > 0.0)
+        g_state.pacingStats.lastFrameDuration = now - s_lastPresentTime;
+    s_lastPresentTime = now;
 }
 
 // ---------------------------------------------------------------------------
@@ -403,8 +415,11 @@ void ios_get_drawable_size(uint32_t* outW, uint32_t* outH) {
 }
 
 void ios_frame_presented(void) {
+    // Record real inter-frame duration for the pacing EWMA.
+    // platform_update_frame_pacing() is driven by the CADisplayLink vblank
+    // callback and must NOT be called here again — doing so would double-count
+    // every frame, corrupt frameIndex, and make throttle logic unreliable.
     ios::recycle_drawable();
-    ios::platform_update_frame_pacing();
 }
 
 void ios_app_did_enter_background(void) {
@@ -414,7 +429,7 @@ void ios_app_did_enter_background(void) {
 
 void ios_app_will_enter_foreground(void) {
     ios::g_state.inBackground.store(false);
-    [ios::g_state.displayLink start];
+    [ios::g_state.displayLink resume];
 }
 
 } // extern "C"
