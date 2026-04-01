@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+        Required for ProMotion 120 Hz rendering on iPhone 13 Pro and later.
+        Without this, CADisplayLink is capped at 60 Hz regardless of the
+        preferredFrameRateRange setting in ios_platform.mm.
+    -->
+    <key>com.apple.developer.game-controller</key>
+    <true/>
+
+    <!--
+        Allows the process to increase thread scheduling priority.
+        Needed by dynarmic JIT dispatch and the emulator's vblank thread.
+    -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+
+    <!--
+        Required for the dynarmic ARM JIT recompiler to write executable
+        pages at runtime. Without this the emulator falls back to the
+        slower interpreter on iOS 17+.
+        NOTE: This entitlement requires a paid Apple Developer account.
+        On AltStore / Sideloadly distributions it is unavailable and the
+        interpreter fallback is used automatically.
+    -->
+    <key>dynamic-codesigning</key>
+    <true/>
+
+    <!--
+        iCloud Documents — allows the user to place ROM files in iCloud Drive
+        and have Vitra access them. Optional but strongly recommended.
+    -->
+    <key>com.apple.developer.icloud-container-identifiers</key>
+    <array>
+        <string>iCloud.org.vitra.app</string>
+    </array>
+    <key>com.apple.developer.icloud-services</key>
+    <array>
+        <string>CloudDocuments</string>
+    </array>
+
+    <!--
+        Local network access — required if the user imports content over
+        Wi-Fi (e.g. FTP from a PC). Remove if not shipping that feature.
+    -->
+    <key>com.apple.developer.networking.multicast</key>
+    <true/>
+</dict>
+</plist>

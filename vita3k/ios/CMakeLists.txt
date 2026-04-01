@@ -81,6 +81,8 @@ set_target_properties(vita3k_ios PROPERTIES
     XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "org.vitra.app"
     XCODE_ATTRIBUTE_PRODUCT_NAME "Vitra"
     RESOURCE "${IOS_ASSET_CATALOG}"
+    # Entitlements (ProMotion + JIT + iCloud)
+    XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/Vitra.entitlements"
 )
 
 # ── Compile definitions ───────────────────────────────────────────────────────
