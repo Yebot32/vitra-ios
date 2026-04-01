@@ -43,13 +43,14 @@ jobs:
     - name: Download MoltenVK
       if: steps.cache-mvk.outputs.cache-hit != 'true'
       run: |
-        # Fixed the URL to include .tar.gz to resolve the 404 error
-        curl -fL "https://github.com/KhronosGroup/MoltenVK/releases/download/v${MOLTENVK_VERSION}/MoltenVK-all.tar.gz" -o MoltenVK.tar.gz
-        tar -xf MoltenVK.tar.gz
-        mv MoltenVK-all MoltenVK
+        # Corrected URL for the iOS-specific MoltenVK package
+        curl -L -o MoltenVK.tar.gz "https://github.com/KhronosGroup/MoltenVK/releases/download/v${MOLTENVK_VERSION}/MoltenVK-ios.tar.gz"
+        mkdir -p MoltenVK
+        tar -xzf MoltenVK.tar.gz -C MoltenVK --strip-components=1
 
     - name: Set MoltenVK path
       run: |
+        # Pointing to the specific framework inside the extracted folder
         MVK_LIB="$(pwd)/MoltenVK/MoltenVK.xcframework/ios-arm64/libMoltenVK.a"
         echo "VITA3K_MOLTENVK=${MVK_LIB}" >> $GITHUB_ENV
 
@@ -77,9 +78,8 @@ jobs:
           -DCMAKE_C_COMPILER_LAUNCHER=sccache \
           -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-    - name: Archive (Force Unsigned)
+    - name: Archive (Unsigned)
       run: |
-        # Removed '|| true' so we can catch real C++ errors
         xcodebuild \
           -project "$BUILD_DIR/Vitra.xcodeproj" \
           -scheme "$SCHEME" \
@@ -87,38 +87,35 @@ jobs:
           -destination "generic/platform=iOS" \
           -archivePath "$ARCHIVE_PATH" \
           archive \
-          CODE_SIGN_IDENTITY="-" \
-          CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGN_IDENTITY="-" \
           COMPILER_INDEX_STORE_ENABLE=NO
 
-    - name: Package unsigned IPA
+    - name: Package Unsigned IPA
       run: |
-        APP_PATH=$(find "$ARCHIVE_PATH" -name "Vitra.app" -type d 2>/dev/null | head -1)
+        # Find the .app bundle inside the archive
+        APP_PATH=$(find "$ARCHIVE_PATH" -name "Vitra.app" -type d | head -1)
         if [ -z "$APP_PATH" ]; then 
-          echo "ERROR: Vitra.app not found in archive. Checking build dir..."
-          APP_PATH=$(find "$BUILD_DIR" -name "Vitra.app" -type d 2>/dev/null | head -1)
+          echo "Search failed, checking fallback build directory..."
+          APP_PATH=$(find "$BUILD_DIR" -name "Vitra.app" -type d | head -1)
         fi
         
-        if [ -z "$APP_PATH" ]; then 
-          echo "FATAL ERROR: Could not find Vitra.app anywhere."
-          exit 1
-        fi
+        if [ -z "$APP_PATH" ]; then exit 1; fi
         
-        echo "Found App at: $APP_PATH"
-        mkdir -p build/unsigned_payload/Payload
-        cp -r "$APP_PATH" build/unsigned_payload/Payload/Vitra.app
+        # Manually create the Payload folder for the IPA
+        mkdir -p build/ipa_payload/Payload
+        cp -r "$APP_PATH" build/ipa_payload/Payload/
         
-        # Remove any existing signature to ensure it's truly unsigned
-        codesign --remove-signature build/unsigned_payload/Payload/Vitra.app 2>/dev/null || true
+        # Remove any partial signatures
+        codesign --remove-signature build/ipa_payload/Payload/Vitra.app || true
         
-        cd build/unsigned_payload
+        cd build/ipa_payload
         zip -r "../../Vitra_unsigned.ipa" Payload/
 
-    - name: Upload unsigned IPA
+    - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: Vitra-iOS-unsigned
         path: Vitra_unsigned.ipa
-        if-no-files-found: error
-        retention-days: 30
+        retention-days: 7
