@@ -113,9 +113,12 @@ void touch_vsync_update(const EmuEnvState &emuenv) {
     std::chrono::time_point<std::chrono::steady_clock> ts = std::chrono::steady_clock::now();
     uint64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
 
-    // disable mouse support on android because the touchscreen is considered as a mouse, and this creates a mess
-#ifdef __ANDROID__
+    // Disable mouse support on android and iOS because the touchscreen is
+    // considered as a mouse on both platforms, and this creates a mess.
+#if defined(__ANDROID__)
     constexpr bool on_android = true;
+#elif defined(__APPLE__) && TARGET_OS_IOS
+    constexpr bool on_android = true; // same behaviour: finger-only, no mouse
 #else
     constexpr bool on_android = false;
 #endif
