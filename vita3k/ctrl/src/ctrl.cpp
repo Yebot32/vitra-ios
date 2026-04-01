@@ -78,6 +78,11 @@ Java_org_vita3k_emulator_overlay_InputOverlay_setButton(JNIEnv *env, jobject thi
         SDL_SetJoystickVirtualButton(virtual_joystick, button, value);
 }
 }
+#elif defined(__APPLE__) && TARGET_OS_IOS
+// On iOS the overlay is driven by ios_overlay.mm via ios_overlay::attach_controller().
+// ctrl.cpp does not need to manage a separate joystick — it is already attached
+// before the first call to refresh_controllers().
+#include "ios/ios_overlay.h"
 #endif
 
 static uint64_t timestamp;
