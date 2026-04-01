@@ -136,7 +136,7 @@ static void draw_config_menu(GuiState &gui, EmuEnvState &emuenv) {
 static void draw_controls_menu(GuiState &gui) {
     auto &lang = gui.lang.main_menubar.controls;
     if (ImGui::BeginMenu(lang["title"].c_str())) {
-#ifdef __ANDROID__
+#if defined(__ANDROID__) || (defined(__APPLE__) && TARGET_OS_IOS)
         ImGui::MenuItem(gui.lang.overlay["title"].c_str(), nullptr, &gui.controls_menu.overlay_dialog);
 #endif
         ImGui::MenuItem(lang["keyboard_controls"].c_str(), nullptr, &gui.controls_menu.controls_dialog);

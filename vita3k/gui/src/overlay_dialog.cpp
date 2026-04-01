@@ -28,6 +28,8 @@
 #ifdef __ANDROID__
 #include <SDL3/SDL_system.h>
 #include <jni.h>
+#elif defined(__APPLE__) && TARGET_OS_IOS
+#include "ios/ios_overlay.h"
 #endif
 
 namespace gui {
@@ -181,6 +183,91 @@ void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     ImGui::End();
 }
+#ifdef __ANDROID__
+// ... full Android JNI implementation above ...
+#elif defined(__APPLE__) && TARGET_OS_IOS
+
+void set_controller_overlay_state(int overlay_mask, bool edit, bool reset) {
+    ios_overlay::set_visible(overlay_mask != 0);
+    ios_overlay::set_edit_mode(edit);
+    if (reset) ios_overlay::reset_layout();
+}
+void set_controller_overlay_scale(float scale) {
+    ios_overlay::set_scale(scale);
+}
+void set_controller_overlay_opacity(int opacity) {
+    ios_overlay::set_opacity(opacity);
+}
+
+void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
+    // Reuse the Android ImGui dialog — it is identical in structure.
+    // We just route the three helper calls above to ios_overlay instead of JNI.
+    const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.manual_dpi_scale, 0.f);
+    ImGui::SetNextWindowPos(ImVec2(emuenv.logical_viewport_pos.x + (display_size.x / 2.f),
+                                   emuenv.logical_viewport_pos.y + (display_size.y / 2.f)),
+                            ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::Begin("##overlay", &gui.controls_menu.overlay_dialog,
+                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::SetWindowFontScale(RES_SCALE.x);
+
+    auto &lang   = gui.lang.overlay;
+    auto &common = emuenv.common_dialog.lang.common;
+
+    TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["title"].c_str());
+    ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
+
+    static bool overlay_editing = false;
+
+    TextColoredCentered(GUI_COLOR_TEXT_MENUBAR, lang["gamepad_overlay"].c_str());
+    ImGui::Spacing();
+    if (ImGui::Checkbox(lang["enable_gamepad_overlay"].c_str(), &emuenv.cfg.enable_gamepad_overlay))
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+
+    const char *edit_txt = overlay_editing ? lang["hide_gamepad_overlay"].c_str()
+                                           : lang["modify_gamepad_overlay"].c_str();
+    if (ImGui::Button(edit_txt)) {
+        overlay_editing = !overlay_editing;
+        set_controller_overlay_state(overlay_editing ? get_overlay_display_mask(emuenv.cfg) : 0,
+                                     overlay_editing);
+    }
+    ImGui::Spacing();
+    if (overlay_editing && ImGui::SliderFloat(lang["overlay_scale"].c_str(),
+            &emuenv.cfg.overlay_scale, 0.25f, 4.0f, "%.2f",
+            ImGuiSliderFlags_NoInput | ImGuiSliderFlags_Logarithmic)) {
+        set_controller_overlay_scale(emuenv.cfg.overlay_scale);
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+    }
+    if (overlay_editing && ImGui::SliderInt(lang["overlay_opacity"].c_str(),
+            &emuenv.cfg.overlay_opacity, 0, 100, "%d%%")) {
+        set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+    }
+    if (overlay_editing && ImGui::Button(lang["reset_gamepad"].c_str())) {
+        set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true, true);
+        emuenv.cfg.overlay_scale   = 1.0f;
+        emuenv.cfg.overlay_opacity = 100;
+        set_controller_overlay_scale(emuenv.cfg.overlay_scale);
+        set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+    }
+    ImGui::Spacing(); ImGui::Separator();
+    if (emuenv.cfg.enable_gamepad_overlay &&
+        ImGui::Checkbox(lang["overlay_show_touch_switch"].c_str(),
+                        &emuenv.cfg.overlay_show_touch_switch)) {
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+    }
+    ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
+    if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE)) {
+        set_controller_overlay_state(0);
+        overlay_editing = false;
+        gui.controls_menu.overlay_dialog = false;
+    }
+    ImGui::End();
+}
+
 #else
 
 void set_controller_overlay_state(int overlay_mask, bool edit, bool reset) {}
