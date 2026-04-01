@@ -10,7 +10,7 @@ env:
   BUILD_DIR: build/ios-release
   SCHEME: Vitra
   ARCHIVE_PATH: build/Vitra.xcarchive
-  UNSIGNED_IPA: build/Vitra_unsigned.ipa
+  UNSIGNED_IPA: Vitra_unsigned.ipa
 
 jobs:
   build-ipa:
@@ -33,38 +33,25 @@ jobs:
     - name: Install CMake + Ninja
       run: brew install cmake ninja
 
-    - name: Cache MoltenVK
-      id: cache-mvk
-      uses: actions/cache@v4
-      with:
-        path: MoltenVK
-        key: moltenvk-${{ env.MOLTENVK_VERSION }}
-
     - name: Download MoltenVK
-      if: steps.cache-mvk.outputs.cache-hit != 'true'
       run: |
-        # Corrected URL for the iOS-specific MoltenVK package
+        # Using a more direct download and forcing the folder structure
         curl -L -o MoltenVK.tar.gz "https://github.com/KhronosGroup/MoltenVK/releases/download/v${MOLTENVK_VERSION}/MoltenVK-ios.tar.gz"
         mkdir -p MoltenVK
         tar -xzf MoltenVK.tar.gz -C MoltenVK --strip-components=1
+        
+        # Verify the file exists so the log shows it
+        ls -R MoltenVK/MoltenVK.xcframework/ios-arm64/libMoltenVK.a
 
     - name: Set MoltenVK path
       run: |
-        # Pointing to the specific framework inside the extracted folder
-        MVK_LIB="$(pwd)/MoltenVK/MoltenVK.xcframework/ios-arm64/libMoltenVK.a"
-        echo "VITA3K_MOLTENVK=${MVK_LIB}" >> $GITHUB_ENV
-
-    - name: Cache Boost
-      uses: actions/cache@v4
-      with:
-        path: ${{ env.BUILD_DIR }}/external/boost
-        key: boost-ios-arm64-${{ hashFiles('external/boost/Jamroot', 'external/boost/bootstrap.sh') }}
-
-    - name: Set up sccache
-      uses: mozilla-actions/sccache-action@v0.0.5
+        MVK_PATH="$(pwd)/MoltenVK"
+        echo "VITA3K_MOLTENVK_DIR=${MVK_PATH}" >> $GITHUB_ENV
+        echo "MOLTENVK_DIR=${MVK_PATH}" >> $GITHUB_ENV
 
     - name: CMake Configure
       run: |
+        # Added -DMoltenVK_DIR to help CMake find the package config
         cmake -S . -B "$BUILD_DIR" \
           -G Xcode \
           -DCMAKE_TOOLCHAIN_FILE=cmake/ios_toolchain.cmake \
@@ -73,10 +60,9 @@ jobs:
           -DUSE_DISCORD_RICH_PRESENCE=OFF \
           -DUSE_VITA3K_UPDATE=OFF \
           -DBUILD_APPIMAGE=OFF \
-          -DMOLTENVK_STATIC_LIB="${{ env.VITA3K_MOLTENVK }}" \
-          -DVITA3K_FORCE_CUSTOM_BOOST=ON \
-          -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          -DMoltenVK_DIR="${{ env.MOLTENVK_DIR }}" \
+          -DMOLTENVK_STATIC_LIB="${{ env.MOLTENVK_DIR }}/MoltenVK.xcframework/ios-arm64/libMoltenVK.a" \
+          -DVITA3K_FORCE_CUSTOM_BOOST=ON
 
     - name: Archive (Unsigned)
       run: |
@@ -89,33 +75,18 @@ jobs:
           archive \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGN_IDENTITY="-" \
-          COMPILER_INDEX_STORE_ENABLE=NO
+          CODE_SIGN_IDENTITY="-"
 
     - name: Package Unsigned IPA
       run: |
-        # Find the .app bundle inside the archive
         APP_PATH=$(find "$ARCHIVE_PATH" -name "Vitra.app" -type d | head -1)
-        if [ -z "$APP_PATH" ]; then 
-          echo "Search failed, checking fallback build directory..."
-          APP_PATH=$(find "$BUILD_DIR" -name "Vitra.app" -type d | head -1)
-        fi
-        
         if [ -z "$APP_PATH" ]; then exit 1; fi
-        
-        # Manually create the Payload folder for the IPA
-        mkdir -p build/ipa_payload/Payload
-        cp -r "$APP_PATH" build/ipa_payload/Payload/
-        
-        # Remove any partial signatures
-        codesign --remove-signature build/ipa_payload/Payload/Vitra.app || true
-        
-        cd build/ipa_payload
-        zip -r "../../Vitra_unsigned.ipa" Payload/
+        mkdir -p Payload
+        cp -r "$APP_PATH" Payload/
+        zip -r "Vitra_unsigned.ipa" Payload/
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: Vitra-iOS-unsigned
         path: Vitra_unsigned.ipa
-        retention-days: 7
