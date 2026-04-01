@@ -1,108 +1,111 @@
-name: Build Vita3K iOS IPA
+name: Build Vitra iOS IPA
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, main ]
+    paths-ignore:
+      - '**/*.md'
+      - '.github/ISSUE_TEMPLATE/**'
   pull_request:
-    branches: [ master ]
-  workflow_dispatch:  # allows manual trigger from GitHub UI
+    branches: [ master, main ]
+    paths-ignore:
+      - '**/*.md'
+  workflow_dispatch:
+
+env:
+  MOLTENVK_VERSION: "1.2.10"
+  BUILD_DIR: build/ios-release
+  SCHEME: Vitra
+  ARCHIVE_PATH: build/Vitra.xcarchive
+  UNSIGNED_IPA: build/Vitra_unsigned.ipa
 
 jobs:
-  build-ios:
-    runs-on: macos-14  # Apple Silicon runner, Xcode 15+
-    timeout-minutes: 120
+  build-ipa:
+    name: Build Vitra IPA
+    runs-on: macos-14
+    timeout-minutes: 150
 
     steps:
-    # ── 1. Checkout ───────────────────────────────────────────────────────
-    - name: Checkout Vita3K
+
+    - name: Checkout
       uses: actions/checkout@v4
       with:
         submodules: recursive
+        fetch-depth: 0
 
-    # ── 2. Xcode version ─────────────────────────────────────────────────
-    - name: Select Xcode 15
-      run: sudo xcode-select -s /Applications/Xcode_15.4.app
-
-    # ── 3. Install CMake ─────────────────────────────────────────────────
-    - name: Install CMake
-      run: brew install cmake ninja
-
-    # ── 4. Download MoltenVK ─────────────────────────────────────────────
-    - name: Download MoltenVK
+    - name: Select Xcode 15.4
       run: |
-        MOLTENVK_VERSION="1.2.10"
-        curl -L "https://github.com/KhronosGroup/MoltenVK/releases/download/v${MOLTENVK_VERSION}/MoltenVK-all.tar"  \
-             -o MoltenVK.tar || \
-        curl -L "https://github.com/KhronosGroup/MoltenVK/releases/latest/download/MoltenVK-all.tar" \
-             -o MoltenVK.tar
-        tar -xf MoltenVK.tar
-        echo "VITA3K_MOLTENVK=$(pwd)/MoltenVK/MoltenVK.xcframework/ios-arm64/libMoltenVK.a" >> $GITHUB_ENV
-        ls MoltenVK/MoltenVK.xcframework/
+        sudo xcode-select -s /Applications/Xcode_15.4.app
+        xcodebuild -version
 
-    # ── 5. Cache Boost build ──────────────────────────────────────────────
+    - name: Install CMake + Ninja + xcpretty
+      run: |
+        brew install cmake ninja
+        gem install xcpretty --no-document 2>/dev/null || true
+
+    - name: Cache MoltenVK
+      id: cache-mvk
+      uses: actions/cache@v4
+      with:
+        path: MoltenVK
+        key: moltenvk-${{ env.MOLTENVK_VERSION }}
+
+    - name: Download MoltenVK
+      if: steps.cache-mvk.outputs.cache-hit != 'true'
+      run: |
+        curl -fL \
+          "https://github.com/KhronosGroup/MoltenVK/releases/download/v${MOLTENVK_VERSION}/MoltenVK-all.tar" \
+          -o MoltenVK.tar
+        tar -xf MoltenVK.tar
+
+    - name: Set MoltenVK path
+      run: |
+        MVK_LIB="$(pwd)/MoltenVK/MoltenVK.xcframework/ios-arm64/libMoltenVK.a"
+        echo "VITA3K_MOLTENVK=${MVK_LIB}" >> $GITHUB_ENV
+
     - name: Cache Boost
       uses: actions/cache@v4
       with:
-        path: build/ios-device-Release/external/boost
-        key: boost-ios-${{ hashFiles('external/boost/bootstrap.sh') }}
+        path: ${{ env.BUILD_DIR }}/external/boost
+        key: boost-ios-arm64-${{ hashFiles('external/boost/Jamroot', 'external/boost/bootstrap.sh') }}
 
-    # ── 6. CMake configure ────────────────────────────────────────────────
+    - name: Set up sccache
+      uses: mozilla-actions/sccache-action@v0.0.5
+
     - name: CMake Configure
       run: |
-        cmake -S . -B build/ios-device-Release \
+        cmake -S . -B "$BUILD_DIR" \
           -G Xcode \
           -DCMAKE_TOOLCHAIN_FILE=cmake/ios_toolchain.cmake \
-          -DIOS_PLATFORM=OS64 \
+          -DCMAKE_SYSTEM_NAME=iOS \
           -DCMAKE_BUILD_TYPE=Release \
           -DUSE_DISCORD_RICH_PRESENCE=OFF \
           -DUSE_VITA3K_UPDATE=OFF \
           -DBUILD_APPIMAGE=OFF \
           -DMOLTENVK_STATIC_LIB="${{ env.VITA3K_MOLTENVK }}" \
           -DVITA3K_FORCE_CUSTOM_BOOST=ON \
-          -DIOS_DEVELOPMENT_TEAM="${{ secrets.IOS_TEAM_ID }}"
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-    # ── 7. Build ──────────────────────────────────────────────────────────
-    - name: Build (xcodebuild)
-      run: |
-        xcodebuild \
-          -project build/ios-device-Release/Vita3K.xcodeproj \
-          -scheme Vita3K \
-          -configuration Release \
-          -destination "generic/platform=iOS" \
-          -allowProvisioningUpdates \
-          CODE_SIGN_IDENTITY="${{ secrets.IOS_SIGN_IDENTITY }}" \
-          DEVELOPMENT_TEAM="${{ secrets.IOS_TEAM_ID }}" \
-          CODE_SIGN_STYLE=Manual \
-          PROVISIONING_PROFILE_SPECIFIER="${{ secrets.IOS_PROVISIONING_PROFILE_NAME }}" \
-          build \
-          | xcpretty || true
-
-    # ── 8. Import signing certificate ─────────────────────────────────────
-    # (needed for IPA export — skip this block if using unsigned/sideload IPA)
     - name: Import signing certificate
       if: ${{ secrets.IOS_CERTIFICATE_P12 != '' }}
       env:
         CERTIFICATE_P12: ${{ secrets.IOS_CERTIFICATE_P12 }}
         CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
       run: |
-        # Create temp keychain
-        security create-keychain -p "vita3k_temp" vita3k_temp.keychain
-        security set-keychain-settings -lut 21600 vita3k_temp.keychain
-        security unlock-keychain -p "vita3k_temp" vita3k_temp.keychain
-
-        # Import cert
+        KEYCHAIN=vitra-build.keychain
+        security create-keychain -p "vitra_ci" "$KEYCHAIN"
+        security set-keychain-settings -lut 21600 "$KEYCHAIN"
+        security unlock-keychain -p "vitra_ci" "$KEYCHAIN"
         echo "$CERTIFICATE_P12" | base64 --decode > certificate.p12
         security import certificate.p12 \
-          -k vita3k_temp.keychain \
-          -P "$CERTIFICATE_PASSWORD" \
-          -T /usr/bin/codesign \
-          -T /usr/bin/security
+          -k "$KEYCHAIN" -P "$CERTIFICATE_PASSWORD" \
+          -T /usr/bin/codesign -T /usr/bin/security
         security set-key-partition-list \
-          -S apple-tool:,apple:,codesign: \
-          -s -k "vita3k_temp" vita3k_temp.keychain
-        security list-keychains -d user -s vita3k_temp.keychain $(security list-keychains -d user | sed s/\"//g)
+          -S apple-tool:,apple:,codesign: -s -k "vitra_ci" "$KEYCHAIN"
+        security list-keychains -d user -s "$KEYCHAIN" \
+          $(security list-keychains -d user | sed s/\"//g)
 
-    # ── 9. Import provisioning profile ────────────────────────────────────
     - name: Import provisioning profile
       if: ${{ secrets.IOS_PROVISIONING_PROFILE != '' }}
       env:
@@ -110,97 +113,81 @@ jobs:
       run: |
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
         echo "$PROVISIONING_PROFILE" | base64 --decode \
-          > ~/Library/MobileDevice/Provisioning\ Profiles/vita3k.mobileprovision
+          > ~/Library/MobileDevice/Provisioning\ Profiles/vitra.mobileprovision
 
-    # ── 10. Export IPA ────────────────────────────────────────────────────
-    - name: Export IPA
+    - name: Archive (xcodebuild)
       run: |
-        # First archive
+        if [ -n "${{ secrets.IOS_TEAM_ID }}" ]; then
+          SIGN_ARGS="CODE_SIGN_IDENTITY=${{ secrets.IOS_SIGN_IDENTITY }} DEVELOPMENT_TEAM=${{ secrets.IOS_TEAM_ID }} CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER=${{ secrets.IOS_PROVISIONING_PROFILE_NAME }}"
+        else
+          SIGN_ARGS="CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO"
+        fi
         xcodebuild \
-          -project build/ios-device-Release/Vita3K.xcodeproj \
-          -scheme Vita3K \
+          -project "$BUILD_DIR/Vitra.xcodeproj" \
+          -scheme "$SCHEME" \
           -configuration Release \
           -destination "generic/platform=iOS" \
-          -archivePath build/Vita3K.xcarchive \
+          -archivePath "$ARCHIVE_PATH" \
           archive \
-          CODE_SIGN_IDENTITY="${{ secrets.IOS_SIGN_IDENTITY }}" \
-          DEVELOPMENT_TEAM="${{ secrets.IOS_TEAM_ID }}" \
-          | xcpretty || true
+          $SIGN_ARGS \
+          COMPILER_INDEX_STORE_ENABLE=NO \
+          | xcpretty --color || true
 
-        # Create ExportOptions.plist
-        cat > ExportOptions.plist << 'EOF'
+    - name: Export signed IPA
+      if: ${{ secrets.IOS_TEAM_ID != '' }}
+      run: |
+        cat > ExportOptions.plist << EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
         <plist version="1.0">
         <dict>
-            <key>method</key>
-            <string>ad-hoc</string>
-            <key>teamID</key>
-            <string>${{ secrets.IOS_TEAM_ID }}</string>
-            <key>signingStyle</key>
-            <string>manual</string>
-            <key>stripSwiftSymbols</key>
-            <true/>
-            <key>uploadBitcode</key>
-            <false/>
-            <key>compileBitcode</key>
-            <false/>
+            <key>method</key><string>ad-hoc</string>
+            <key>teamID</key><string>${{ secrets.IOS_TEAM_ID }}</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>stripSwiftSymbols</key><true/>
+            <key>uploadBitcode</key><false/>
+            <key>compileBitcode</key><false/>
         </dict>
         </plist>
         EOF
-
-        # Export IPA from archive
         xcodebuild -exportArchive \
-          -archivePath build/Vita3K.xcarchive \
+          -archivePath "$ARCHIVE_PATH" \
           -exportOptionsPlist ExportOptions.plist \
           -exportPath build/ipa/ \
-          | xcpretty || true
+          | xcpretty --color || true
 
-    # ── 11. Unsigned IPA fallback (for sideloading via AltStore/Sideloadly) ─
-    - name: Create unsigned IPA (sideload-ready)
+    - name: Package unsigned IPA
       run: |
-        # Find the built .app
-        APP_PATH=$(find build/ios-device-Release -name "Vita3K.app" -type d | head -1)
-        if [ -z "$APP_PATH" ]; then
-          echo "Vita3K.app not found, checking archive..."
-          APP_PATH=$(find build/Vita3K.xcarchive -name "Vita3K.app" -type d | head -1)
-        fi
+        APP_PATH=$(find "$ARCHIVE_PATH" -name "Vitra.app" -type d 2>/dev/null | head -1)
+        [ -z "$APP_PATH" ] && APP_PATH=$(find "$BUILD_DIR" -name "Vitra.app" -type d 2>/dev/null | head -1)
+        if [ -z "$APP_PATH" ]; then echo "ERROR: Vitra.app not found"; exit 1; fi
+        echo "Packaging: $APP_PATH"
+        mkdir -p build/unsigned_payload/Payload
+        cp -r "$APP_PATH" build/unsigned_payload/Payload/Vitra.app
+        codesign --remove-signature build/unsigned_payload/Payload/Vitra.app 2>/dev/null || true
+        cd build/unsigned_payload && zip -r "../Vitra_unsigned.ipa" Payload/
 
-        if [ -n "$APP_PATH" ]; then
-          mkdir -p build/unsigned_ipa/Payload
-          cp -r "$APP_PATH" build/unsigned_ipa/Payload/Vita3K.app
-          cd build/unsigned_ipa
-          zip -r ../Vita3K_unsigned.ipa Payload/
-          cd ../..
-          echo "Unsigned IPA created at build/Vita3K_unsigned.ipa"
-        else
-          echo "WARNING: Could not find Vita3K.app to package"
-        fi
+    - name: Upload unsigned IPA
+      uses: actions/upload-artifact@v4
+      with:
+        name: Vitra-iOS-unsigned
+        path: ${{ env.UNSIGNED_IPA }}
+        if-no-files-found: error
+        retention-days: 30
 
-    # ── 12. Upload artifacts ──────────────────────────────────────────────
     - name: Upload signed IPA
       uses: actions/upload-artifact@v4
-      if: always()
+      if: ${{ secrets.IOS_TEAM_ID != '' }}
       with:
-        name: Vita3K-iOS-signed
+        name: Vitra-iOS-signed
         path: build/ipa/*.ipa
         if-no-files-found: ignore
         retention-days: 30
 
-    - name: Upload unsigned IPA (for AltStore/Sideloadly)
+    - name: Upload xcarchive
       uses: actions/upload-artifact@v4
-      if: always()
       with:
-        name: Vita3K-iOS-unsigned
-        path: build/Vita3K_unsigned.ipa
-        if-no-files-found: ignore
-        retention-days: 30
-
-    - name: Upload xcarchive (for manual IPA export)
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: Vita3K-xcarchive
-        path: build/Vita3K.xcarchive
+        name: Vitra-xcarchive
+        path: ${{ env.ARCHIVE_PATH }}
         if-no-files-found: ignore
         retention-days: 7
