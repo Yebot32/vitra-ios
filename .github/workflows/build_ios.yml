@@ -35,26 +35,20 @@ jobs:
 
     - name: Download MoltenVK
       run: |
-        # Download the iOS-specific package
         curl -L -o MoltenVK.tar.gz "https://github.com/KhronosGroup/MoltenVK/releases/download/v${MOLTENVK_VERSION}/MoltenVK-ios.tar.gz"
         mkdir -p MoltenVK
-        # Extract and flatten the folder structure
         tar -xzf MoltenVK.tar.gz -C MoltenVK --strip-components=1
-        
-        # This part helps us debug if it fails again
         echo "Verifying MoltenVK files..."
         find MoltenVK -name "libMoltenVK.a"
 
     - name: Set Environment Variables
       run: |
-        # We set the absolute path so CMake doesn't get lost
         MVK_DIR="$(pwd)/MoltenVK"
         echo "MOLTENVK_DIR=$MVK_DIR" >> $GITHUB_ENV
         echo "VITA3K_MOLTENVK_DIR=$MVK_DIR" >> $GITHUB_ENV
 
     - name: CMake Configure
       run: |
-        # We pass both the Directory and the Static Lib path to be safe
         cmake -S . -B "$BUILD_DIR" \
           -G Xcode \
           -DCMAKE_TOOLCHAIN_FILE=cmake/ios_toolchain.cmake \
@@ -69,7 +63,6 @@ jobs:
 
     - name: Archive (Unsigned Build)
       run: |
-        # This is the step that will take the most time (15-40 mins)
         xcodebuild \
           -project "$BUILD_DIR/Vitra.xcodeproj" \
           -scheme "$SCHEME" \
@@ -84,26 +77,14 @@ jobs:
 
     - name: Package Unsigned IPA
       run: |
-        # Look for the app in the archive folder
         APP_PATH=$(find "$ARCHIVE_PATH" -name "Vitra.app" -type d | head -1)
-        
         if [ -z "$APP_PATH" ]; then
-          echo "Archive app not found, checking build directory..."
           APP_PATH=$(find "$BUILD_DIR" -name "Vitra.app" -type d | head -1)
         fi
-        
-        if [ -z "$APP_PATH" ]; then
-          echo "Error: Could not find Vitra.app"
-          exit 1
-        fi
-        
-        # Create the standard IPA structure
+        if [ -z "$APP_PATH" ]; then exit 1; fi
         mkdir -p Payload
         cp -r "$APP_PATH" Payload/
-        
-        # Strip any existing signatures to prevent sideloading errors
         codesign --remove-signature Payload/Vitra.app || true
-        
         zip -r "Vitra_unsigned.ipa" Payload/
 
     - name: Upload IPA
