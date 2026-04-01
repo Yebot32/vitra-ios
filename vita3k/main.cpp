@@ -587,6 +587,14 @@ int main(int argc, char *argv[]) {
             ImGui::PopFont();
         }
 
+        // Compact FPS counter and JIT indicator (each independently toggled in settings)
+        if (!emuenv.kernel.is_threads_paused()) {
+            ImGui::PushFont(gui.vita_font[emuenv.current_font_level]);
+            gui::draw_fps_overlay(gui, emuenv);
+            gui::draw_jit_indicator(gui, emuenv);
+            ImGui::PopFont();
+        }
+
         if (emuenv.cfg.current_config.show_touchpad_cursor && !emuenv.kernel.is_threads_paused())
             gui::draw_touchpad_cursor(emuenv);
 
