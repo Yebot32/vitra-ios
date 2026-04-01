@@ -1172,6 +1172,35 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             SetTooltipEx(lang.emulator["select_position"].c_str());
         }
         ImGui::Spacing();
+        ImGui::Separator();
+
+        // ── FPS Overlay (always-visible compact counter, independent of the
+        //    full performance overlay) ──────────────────────────────────────
+        TextColoredCentered(GUI_COLOR_TEXT_TITLE, "FPS Overlay");
+        ImGui::Spacing();
+        if (ImGui::Checkbox("Show FPS counter", &emuenv.cfg.show_fps_overlay)) {
+            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        }
+        ImGui::SameLine();
+        ImGui::TextDisabled("(?)");
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Show a small always-on FPS counter in the corner.\nIndependent of the full performance overlay.");
+        ImGui::Spacing();
+
+        // ── JIT Indicator ─────────────────────────────────────────────────
+        TextColoredCentered(GUI_COLOR_TEXT_TITLE, "JIT Indicator");
+        ImGui::Spacing();
+        if (ImGui::Checkbox("Show JIT status indicator", &emuenv.cfg.show_jit_indicator)) {
+            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        }
+        ImGui::SameLine();
+        ImGui::TextDisabled("(?)");
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip(
+                "Shows a badge in the corner: JIT (green) when the dynarmic\n"
+                "recompiler is active, or INT (red) when falling back to the\n"
+                "interpreter (e.g. missing dynamic-codesigning entitlement).");
+        ImGui::Spacing();
 #ifndef _WIN32
         ImGui::Checkbox(lang.emulator["case_insensitive"].c_str(), &emuenv.io.case_isens_find_enabled);
         SetTooltipEx(lang.emulator["case_insensitive_description"].c_str());
