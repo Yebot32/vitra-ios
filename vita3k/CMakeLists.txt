@@ -178,6 +178,11 @@ if(WIN32)
 endif()
 
 target_link_libraries(vita3k PRIVATE app audio config cppcommon ctrl display gdbstub gui gxm io miniz modules motion packages patch renderer shader touch util)
+
+# On iOS, also link the Metal/MoltenVK platform layer and on-screen overlay
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    target_link_libraries(vita3k PRIVATE vita3k_ios)
+endif()
 if(USE_DISCORD_RICH_PRESENCE)
 	target_link_libraries(vita3k PRIVATE discord-rpc)
 endif()
