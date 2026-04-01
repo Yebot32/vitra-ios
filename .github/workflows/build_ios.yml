@@ -35,11 +35,16 @@ jobs:
 
     - name: Download MoltenVK
       run: |
-        curl -L -o MoltenVK.tar.gz "https://github.com/KhronosGroup/MoltenVK/releases/download/v${MOLTENVK_VERSION}/MoltenVK-ios.tar.gz"
+        set -e
+        echo "Downloading MoltenVK v${MOLTENVK_VERSION}..."
+        curl -f -L -o MoltenVK.tar.gz "https://github.com/KhronosGroup/MoltenVK/releases/download/v${MOLTENVK_VERSION}/MoltenVK-ios.tar.gz" || { echo "Failed to download MoltenVK"; exit 1; }
+        echo "Verifying file type..."
+        file MoltenVK.tar.gz
+        echo "Extracting MoltenVK..."
         mkdir -p MoltenVK
-        tar -xzf MoltenVK.tar.gz -C MoltenVK --strip-components=1
+        tar -xzf MoltenVK.tar.gz -C MoltenVK --strip-components=1 || { echo "Failed to extract tar.gz"; exit 1; }
         echo "Verifying MoltenVK files..."
-        find MoltenVK -name "libMoltenVK.a"
+        find MoltenVK -name "libMoltenVK.a" || { echo "Warning: libMoltenVK.a not found"; }
 
     - name: Set Environment Variables
       run: |
