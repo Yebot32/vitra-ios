@@ -17,6 +17,13 @@
 
 #include "interface.h"
 
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
+#if TARGET_OS_IOS
+#include "ios/ios_overlay.h"
+#endif
+
 #include <app/functions.h>
 #include <config/functions.h>
 #include <config/version.h>
@@ -274,6 +281,9 @@ int main(int argc, char *argv[]) {
 #ifdef __ANDROID__
         // The Audio driver (used by default) is really really bad
         SDL_SetHint(SDL_HINT_AUDIO_DRIVER, "openslES");
+#elif TARGET_OS_IOS
+        // Attach the on-screen virtual controller before SDL enumerates gamepads.
+        ios_overlay::attach_controller();
 #endif
 
         if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC | SDL_INIT_SENSOR | SDL_INIT_CAMERA)) {
@@ -567,7 +577,11 @@ int main(int argc, char *argv[]) {
             gui::draw_common_dialog(gui, emuenv);
         gui::draw_vita_area(gui, emuenv);
 
-        if (emuenv.cfg.performance_overlay && !emuenv.kernel.is_threads_paused() && (emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING)) {
+#if TARGET_OS_IOS
+        // Draw on-screen controller over the game frame
+        if (emuenv.cfg.enable_gamepad_overlay)
+            ios_overlay::draw(gui, emuenv);
+#endif
             ImGui::PushFont(gui.vita_font[emuenv.current_font_level]);
             gui::draw_perf_overlay(gui, emuenv);
             ImGui::PopFont();

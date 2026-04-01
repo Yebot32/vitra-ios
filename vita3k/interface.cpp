@@ -19,6 +19,13 @@
 
 #include "module/load_module.h"
 
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
+#if TARGET_OS_IOS
+#include "ios/ios_overlay.h"
+#endif
+
 #include <app/functions.h>
 #include <audio/state.h>
 #include <config/state.h>
@@ -853,7 +860,14 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         case SDL_EVENT_FINGER_DOWN:
         case SDL_EVENT_FINGER_MOTION:
         case SDL_EVENT_FINGER_UP:
+#if TARGET_OS_IOS
+            // Give the on-screen controller first pick. If it consumes the
+            // touch (hit a button/stick zone) we don't pass it to the game.
+            if (!ios_overlay::handle_finger(event.tfinger, emuenv))
+                handle_touch_event(event.tfinger);
+#else
             handle_touch_event(event.tfinger);
+#endif
             break;
         case SDL_EVENT_DROP_FILE: {
             const auto drop_file = fs_utils::utf8_to_path(event.drop.data);
