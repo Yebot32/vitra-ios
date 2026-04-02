@@ -9,7 +9,6 @@ on:
   workflow_dispatch:
 
 env:
-  MOLTENVK_VERSION: "1.2.10"
   BUILD_DIR: build/ios-release
   ARCHIVE_PATH: build/Vitra.xcarchive
   UNSIGNED_IPA: build/Vitra_unsigned.ipa
@@ -36,24 +35,18 @@ jobs:
         brew install cmake ninja
         gem install xcpretty --no-document 2>/dev/null || gem install xcpretty
 
-    - name: Cache MoltenVK
-      id: cache-mvk
-      uses: actions/cache@v4
-      with:
-        path: MoltenVK
-        key: moltenvk-${{ env.MOLTENVK_VERSION }}
-
-    - name: Download MoltenVK
-      if: steps.cache-mvk.outputs.cache-hit != 'true'
+    - name: Download MoltenVK (latest)
       run: |
+        # Fetch the latest release tag from GitHub API
+        LATEST=$(curl -fsSL https://api.github.com/repos/KhronosGroup/MoltenVK/releases/latest \
+          | grep '"tag_name"' | sed 's/.*"tag_name": *"\(.*\)".*/\1/')
+        echo "MoltenVK latest: $LATEST"
         curl -fL \
-          "https://github.com/KhronosGroup/MoltenVK/releases/download/v${MOLTENVK_VERSION}/MoltenVK-all.tar" \
+          "https://github.com/KhronosGroup/MoltenVK/releases/download/${LATEST}/MoltenVK-all.tar" \
           -o MoltenVK.tar
         tar -xf MoltenVK.tar
-
-    - name: Set MoltenVK path
-      run: |
         echo "MVK_LIB=$(pwd)/MoltenVK/MoltenVK.xcframework/ios-arm64/libMoltenVK.a" >> $GITHUB_ENV
+        ls MoltenVK/MoltenVK.xcframework/
 
     - name: Cache Boost
       uses: actions/cache@v4
