@@ -273,16 +273,22 @@ endif()
 add_subdirectory(ffmpeg)
 
 if(APPLE OR NOT FORCE_BUILD_OPENSSL_MAC)
-	execute_process(
-		COMMAND brew --prefix openssl
-		RESULT_VARIABLE BREW_RESULT
-		OUTPUT_VARIABLE BREW_OPENSSL
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-	)
-	if(BREW_RESULT EQUAL 0)
-		set(OPENSSL_ROOT_DIR "${BREW_OPENSSL}")
-		set(OPENSSL_USE_STATIC_LIBS TRUE)
-	endif()
+	# Modern Homebrew uses "openssl@3" — try both names
+	foreach(_ssl_formula openssl@3 openssl@1.1 openssl)
+		execute_process(
+			COMMAND brew --prefix ${_ssl_formula}
+			RESULT_VARIABLE BREW_RESULT
+			OUTPUT_VARIABLE BREW_OPENSSL
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+			ERROR_QUIET
+		)
+		if(BREW_RESULT EQUAL 0 AND EXISTS "${BREW_OPENSSL}/include/openssl/ssl.h")
+			set(OPENSSL_ROOT_DIR "${BREW_OPENSSL}")
+			set(OPENSSL_USE_STATIC_LIBS TRUE)
+			message(STATUS "Found Homebrew OpenSSL at ${BREW_OPENSSL}")
+			break()
+		endif()
+	endforeach()
 endif()
 
 if(NOT FORCE_BUILD_OPENSSL_MAC)
