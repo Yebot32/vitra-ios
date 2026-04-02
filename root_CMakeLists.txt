@@ -1,0 +1,40 @@
+cmake_minimum_required(VERSION 3.22)
+
+# ============================================================================
+# Vitra — PS Vita emulator for iOS (based on Vita3K)
+# Root CMakeLists.txt
+# ============================================================================
+
+project(Vitra
+    VERSION 0.2.1
+    DESCRIPTION "PlayStation Vita emulator"
+    LANGUAGES C CXX OBJC OBJCXX
+)
+
+# ── C++ standard (dynarmic requires C++20) ────────────────────────────────────
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# ── Policy / environment ──────────────────────────────────────────────────────
+cmake_policy(SET CMP0077 NEW)   # option() honours normal variables
+cmake_policy(SET CMP0091 NEW)   # MSVC runtime library via abstraction
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
+# ── Build options ─────────────────────────────────────────────────────────────
+option(USE_DISCORD_RICH_PRESENCE "Enable Discord Rich Presence"     OFF)
+option(USE_VITA3K_UPDATE         "Enable in-app update check"       OFF)
+option(BUILD_APPIMAGE            "Build Linux AppImage"             OFF)
+option(VITA3K_FORCE_CUSTOM_BOOST "Force download/build Boost"       OFF)
+
+# ── External dependency paths ─────────────────────────────────────────────────
+# MoltenVK static library (required for iOS builds)
+set(MOLTENVK_STATIC_LIB "" CACHE FILEPATH "Path to libMoltenVK.a for iOS")
+
+# ── CMake module path ─────────────────────────────────────────────────────────
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+# ── Subdirectories ────────────────────────────────────────────────────────────
+add_subdirectory(vita3k)
