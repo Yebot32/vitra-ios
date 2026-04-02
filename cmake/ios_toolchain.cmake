@@ -1,6 +1,7 @@
 # iOS Toolchain for CMake
 
 set(CMAKE_SYSTEM_NAME iOS)
+set(CMAKE_SYSTEM_PROCESSOR arm64)
 set(CMAKE_OSX_SYSROOT iphoneos)
 
 # arm64 only — all supported devices (A9+) are arm64.
