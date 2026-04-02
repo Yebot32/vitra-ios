@@ -1,24 +1,27 @@
-name: Build Vitra iOS IPA (Unsigned)
+name: Build Vitra IPA
 
 on:
   push:
     branches: [ master, main ]
+    paths-ignore:
+      - '**/*.md'
+      - '.github/ISSUE_TEMPLATE/**'
   workflow_dispatch:
 
 env:
   MOLTENVK_VERSION: "1.2.10"
   BUILD_DIR: build/ios-release
-  SCHEME: Vitra
   ARCHIVE_PATH: build/Vitra.xcarchive
-  UNSIGNED_IPA: Vitra_unsigned.ipa
+  UNSIGNED_IPA: build/Vitra_unsigned.ipa
 
 jobs:
-  build-ipa:
-    name: Build Vitra IPA
+  build:
+    name: Vitra iOS IPA
     runs-on: macos-14
     timeout-minutes: 150
 
     steps:
+
     - name: Checkout
       uses: actions/checkout@v4
       with:
@@ -26,31 +29,40 @@ jobs:
         fetch-depth: 0
 
     - name: Select Xcode 15.4
-      run: |
-        sudo xcode-select -s /Applications/Xcode_15.4.app
-        xcodebuild -version
+      run: sudo xcode-select -s /Applications/Xcode_15.4.app
 
-    - name: Install CMake + Ninja
-      run: brew install cmake ninja
+    - name: Install tools
+      run: |
+        brew install cmake ninja
+        gem install xcpretty --no-document 2>/dev/null || gem install xcpretty
+
+    - name: Cache MoltenVK
+      id: cache-mvk
+      uses: actions/cache@v4
+      with:
+        path: MoltenVK
+        key: moltenvk-${{ env.MOLTENVK_VERSION }}
 
     - name: Download MoltenVK
+      if: steps.cache-mvk.outputs.cache-hit != 'true'
       run: |
-        set -e
-        echo "Downloading MoltenVK v${MOLTENVK_VERSION}..."
-        curl -f -L -o MoltenVK.tar.gz "https://github.com/KhronosGroup/MoltenVK/releases/download/v${MOLTENVK_VERSION}/MoltenVK-ios.tar.gz" || { echo "Failed to download MoltenVK"; exit 1; }
-        echo "Verifying file type..."
-        file MoltenVK.tar.gz
-        echo "Extracting MoltenVK..."
-        mkdir -p MoltenVK
-        tar -xzf MoltenVK.tar.gz -C MoltenVK --strip-components=1 || { echo "Failed to extract tar.gz"; exit 1; }
-        echo "Verifying MoltenVK files..."
-        find MoltenVK -name "libMoltenVK.a" || { echo "Warning: libMoltenVK.a not found"; }
+        curl -fL \
+          "https://github.com/KhronosGroup/MoltenVK/releases/download/v${MOLTENVK_VERSION}/MoltenVK-all.tar" \
+          -o MoltenVK.tar
+        tar -xf MoltenVK.tar
 
-    - name: Set Environment Variables
+    - name: Set MoltenVK path
       run: |
-        MVK_DIR="$(pwd)/MoltenVK"
-        echo "MOLTENVK_DIR=$MVK_DIR" >> $GITHUB_ENV
-        echo "VITA3K_MOLTENVK_DIR=$MVK_DIR" >> $GITHUB_ENV
+        echo "MVK_LIB=$(pwd)/MoltenVK/MoltenVK.xcframework/ios-arm64/libMoltenVK.a" >> $GITHUB_ENV
+
+    - name: Cache Boost
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.BUILD_DIR }}/external/boost
+        key: boost-ios-${{ hashFiles('external/boost/Jamroot', 'external/boost/bootstrap.sh') }}
+
+    - name: Set up sccache
+      uses: mozilla-actions/sccache-action@v0.0.5
 
     - name: CMake Configure
       run: |
@@ -62,39 +74,37 @@ jobs:
           -DUSE_DISCORD_RICH_PRESENCE=OFF \
           -DUSE_VITA3K_UPDATE=OFF \
           -DBUILD_APPIMAGE=OFF \
-          -DMoltenVK_DIR="${{ env.MOLTENVK_DIR }}" \
-          -DMOLTENVK_STATIC_LIB="${{ env.MOLTENVK_DIR }}/MoltenVK.xcframework/ios-arm64/libMoltenVK.a" \
-          -DVITA3K_FORCE_CUSTOM_BOOST=ON
+          -DMOLTENVK_STATIC_LIB="${{ env.MVK_LIB }}" \
+          -DVITA3K_FORCE_CUSTOM_BOOST=ON \
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-    - name: Archive (Unsigned Build)
+    - name: Build & Archive
       run: |
         xcodebuild \
           -project "$BUILD_DIR/Vitra.xcodeproj" \
-          -scheme "$SCHEME" \
+          -scheme Vitra \
           -configuration Release \
           -destination "generic/platform=iOS" \
           -archivePath "$ARCHIVE_PATH" \
           archive \
-          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGN_IDENTITY="-" \
-          COMPILER_INDEX_STORE_ENABLE=NO
+          CODE_SIGNING_ALLOWED=NO \
+          COMPILER_INDEX_STORE_ENABLE=NO \
+          2>&1 | xcpretty --color
 
-    - name: Package Unsigned IPA
+    - name: Package unsigned IPA
       run: |
-        APP_PATH=$(find "$ARCHIVE_PATH" -name "Vitra.app" -type d | head -1)
-        if [ -z "$APP_PATH" ]; then
-          APP_PATH=$(find "$BUILD_DIR" -name "Vitra.app" -type d | head -1)
-        fi
-        if [ -z "$APP_PATH" ]; then exit 1; fi
-        mkdir -p Payload
-        cp -r "$APP_PATH" Payload/
-        codesign --remove-signature Payload/Vitra.app || true
-        zip -r "Vitra_unsigned.ipa" Payload/
+        APP=$(find "$ARCHIVE_PATH" -name "Vitra.app" -type d | head -1)
+        mkdir -p build/Payload
+        cp -r "$APP" build/Payload/Vitra.app
+        codesign --remove-signature build/Payload/Vitra.app 2>/dev/null || true
+        cd build && zip -r Vitra_unsigned.ipa Payload/
 
     - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
-        name: Vitra-iOS-unsigned
-        path: Vitra_unsigned.ipa
-        retention-days: 7
+        name: Vitra-iOS
+        path: ${{ env.UNSIGNED_IPA }}
+        retention-days: 30
