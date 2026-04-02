@@ -38,13 +38,15 @@ jobs:
     - name: Set MoltenVK path
       run: |
         MVK_ROOT=$(brew --prefix molten-vk)
-        MVK_LIB="${MVK_ROOT}/lib/MoltenVK.xcframework/ios-arm64/libMoltenVK.a"
-        # fallback location in older brew formula
-        if [ ! -f "$MVK_LIB" ]; then
-          MVK_LIB=$(find "$MVK_ROOT" -name "libMoltenVK.a" -path "*/ios*" | head -1)
-        fi
+        MVK_LIB=$(find "$MVK_ROOT" -name "libMoltenVK.a" -path "*/ios*" | head -1)
         echo "MVK_LIB=${MVK_LIB}" >> $GITHUB_ENV
-        echo "Found MoltenVK: $MVK_LIB"
+        echo "Found: $MVK_LIB"
+
+    # The repo's root CMakeLists.txt is the iOS-specific one (no project()).
+    # We place a proper root cmake that has cmake_minimum_required + project()
+    # and delegates to vita3k/CMakeLists.txt via add_subdirectory.
+    - name: Place root CMakeLists.txt
+      run: cp root_CMakeLists.txt CMakeLists.txt
 
     - name: Cache Boost
       uses: actions/cache@v4
