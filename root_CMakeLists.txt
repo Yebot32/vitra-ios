@@ -2,39 +2,53 @@ cmake_minimum_required(VERSION 3.22)
 
 # ============================================================================
 # Vitra — PS Vita emulator for iOS (based on Vita3K)
-# Root CMakeLists.txt
 # ============================================================================
 
-project(Vitra
-    VERSION 0.2.1
-    DESCRIPTION "PlayStation Vita emulator"
-    LANGUAGES C CXX OBJC OBJCXX
-)
+project(Vitra VERSION 0.2.1 LANGUAGES C CXX OBJC OBJCXX)
 
-# ── C++ standard (dynarmic requires C++20) ────────────────────────────────────
+# ── C++ standard (dynarmic/biscuit requires C++20) ────────────────────────────
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# ── Policy / environment ──────────────────────────────────────────────────────
-cmake_policy(SET CMP0077 NEW)   # option() honours normal variables
-cmake_policy(SET CMP0091 NEW)   # MSVC runtime library via abstraction
+# ── Policies ─────────────────────────────────────────────────────────────────
+cmake_policy(SET CMP0077 NEW)
+cmake_policy(SET CMP0091 NEW)
 if(POLICY CMP0135)
     cmake_policy(SET CMP0135 NEW)
 endif()
 
-# ── Build options ─────────────────────────────────────────────────────────────
-option(USE_DISCORD_RICH_PRESENCE "Enable Discord Rich Presence"     OFF)
-option(USE_VITA3K_UPDATE         "Enable in-app update check"       OFF)
-option(BUILD_APPIMAGE            "Build Linux AppImage"             OFF)
-option(VITA3K_FORCE_CUSTOM_BOOST "Force download/build Boost"       OFF)
+# ── Options ───────────────────────────────────────────────────────────────────
+option(USE_DISCORD_RICH_PRESENCE  "Enable Discord Rich Presence" OFF)
+option(USE_VITA3K_UPDATE          "Enable in-app update check"   OFF)
+option(BUILD_APPIMAGE             "Build Linux AppImage"         OFF)
+option(VITA3K_FORCE_CUSTOM_BOOST  "Force bundled Boost"          OFF)
 
-# ── External dependency paths ─────────────────────────────────────────────────
-# MoltenVK static library (required for iOS builds)
-set(MOLTENVK_STATIC_LIB "" CACHE FILEPATH "Path to libMoltenVK.a for iOS")
+set(MOLTENVK_STATIC_LIB "" CACHE FILEPATH "Path to libMoltenVK.a (iOS builds)")
 
-# ── CMake module path ─────────────────────────────────────────────────────────
+# ── Module path ───────────────────────────────────────────────────────────────
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# ── Subdirectories ────────────────────────────────────────────────────────────
+# ── get_boost macro ───────────────────────────────────────────────────────────
+# vita3k/CMakeLists.txt calls get_boost() then uses ${Boost_INCLUDE_DIRS}.
+# Boost is header-only for Vita3K's purposes; the bundled copy in
+# external/boost/boost/ is the correct source.
+macro(get_boost)
+    if(NOT VITA3K_FORCE_CUSTOM_BOOST)
+        # Try system Boost first (useful on developer machines)
+        find_package(Boost 1.70 QUIET)
+    endif()
+
+    if(NOT Boost_FOUND)
+        # Fall back to the bundled headers in external/boost
+        set(BOOST_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/boost")
+        set(Boost_INCLUDE_DIRS "${BOOST_ROOT}")
+        set(Boost_FOUND TRUE)
+        message(STATUS "Using bundled Boost headers from external/boost")
+    else()
+        message(STATUS "Using system Boost: ${Boost_INCLUDE_DIRS}")
+    endif()
+endmacro()
+
+# ── Subdirectory ──────────────────────────────────────────────────────────────
 add_subdirectory(vita3k)
