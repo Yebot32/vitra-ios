@@ -64,6 +64,7 @@ jobs:
           -DCMAKE_TOOLCHAIN_FILE=cmake/ios_toolchain.cmake \
           -DCMAKE_SYSTEM_NAME=iOS \
           -DCMAKE_BUILD_TYPE=Release \
+          -DARCHITECTURE=arm64 \
           -DUSE_DISCORD_RICH_PRESENCE=OFF \
           -DUSE_VITA3K_UPDATE=OFF \
           -DBUILD_APPIMAGE=OFF \
