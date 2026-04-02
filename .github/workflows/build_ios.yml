@@ -32,21 +32,19 @@ jobs:
 
     - name: Install tools
       run: |
-        brew install cmake ninja
-        gem install xcpretty --no-document 2>/dev/null || gem install xcpretty
+        brew install cmake ninja molten-vk
+        gem install xcpretty --no-document 2>/dev/null || true
 
-    - name: Download MoltenVK (latest)
+    - name: Set MoltenVK path
       run: |
-        # Fetch the latest release tag from GitHub API
-        LATEST=$(curl -fsSL https://api.github.com/repos/KhronosGroup/MoltenVK/releases/latest \
-          | grep '"tag_name"' | sed 's/.*"tag_name": *"\(.*\)".*/\1/')
-        echo "MoltenVK latest: $LATEST"
-        curl -fL \
-          "https://github.com/KhronosGroup/MoltenVK/releases/download/${LATEST}/MoltenVK-all.tar" \
-          -o MoltenVK.tar
-        tar -xf MoltenVK.tar
-        echo "MVK_LIB=$(pwd)/MoltenVK/MoltenVK.xcframework/ios-arm64/libMoltenVK.a" >> $GITHUB_ENV
-        ls MoltenVK/MoltenVK.xcframework/
+        MVK_ROOT=$(brew --prefix molten-vk)
+        MVK_LIB="${MVK_ROOT}/lib/MoltenVK.xcframework/ios-arm64/libMoltenVK.a"
+        # fallback location in older brew formula
+        if [ ! -f "$MVK_LIB" ]; then
+          MVK_LIB=$(find "$MVK_ROOT" -name "libMoltenVK.a" -path "*/ios*" | head -1)
+        fi
+        echo "MVK_LIB=${MVK_LIB}" >> $GITHUB_ENV
+        echo "Found MoltenVK: $MVK_LIB"
 
     - name: Cache Boost
       uses: actions/cache@v4
