@@ -50,5 +50,9 @@ macro(get_boost)
     endif()
 endmacro()
 
-# ── Subdirectory ──────────────────────────────────────────────────────────────
+# ── Subdirectories ────────────────────────────────────────────────────────────
+# external/ must be configured before vita3k/ so that SDL3::SDL3,
+# pugixml::pugixml, and all other imported targets exist when vita3k's
+# CMakeLists.txt calls target_link_libraries().
+add_subdirectory(external)
 add_subdirectory(vita3k)
