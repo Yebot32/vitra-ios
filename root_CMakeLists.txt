@@ -50,6 +50,25 @@ macro(get_boost)
     endif()
 endmacro()
 
+# ── Boost ─────────────────────────────────────────────────────────────────────
+# dynarmic calls find_package(Boost REQUIRED) directly — we must point CMake
+# at the bundled headers before any add_subdirectory(), otherwise FindBoost
+# searches system paths (which have nothing on the GitHub runner).
+set(BOOST_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/boost"
+    CACHE PATH "Bundled Boost root" FORCE)
+set(Boost_INCLUDE_DIRS "${BOOST_ROOT}" CACHE PATH "" FORCE)
+set(Boost_NO_SYSTEM_PATHS ON CACHE BOOL "" FORCE)
+set(Boost_NO_BOOST_CMAKE  ON CACHE BOOL "" FORCE)
+# Mark as already found so find_package(Boost) short-circuits immediately
+set(Boost_FOUND TRUE CACHE BOOL "" FORCE)
+set(Boost_VERSION "1.83.0" CACHE STRING "" FORCE)
+set(Boost_VERSION_STRING "1.83.0" CACHE STRING "" FORCE)
+set(Boost_MAJOR_VERSION 1 CACHE STRING "" FORCE)
+set(Boost_MINOR_VERSION 83 CACHE STRING "" FORCE)
+set(Boost_SUBMINOR_VERSION 0 CACHE STRING "" FORCE)
+# Header-only — no compiled libs needed for Vita3K/dynarmic
+set(Boost_LIBRARIES "" CACHE STRING "" FORCE)
+
 # ── Subdirectories ────────────────────────────────────────────────────────────
 # external/ must be configured before vita3k/ so that SDL3::SDL3,
 # pugixml::pugixml, and all other imported targets exist when vita3k's
