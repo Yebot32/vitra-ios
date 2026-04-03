@@ -42,24 +42,9 @@ jobs:
         MVK_ROOT=$(brew --prefix molten-vk)
         MVK_LIB=$(find "$MVK_ROOT" -name "libMoltenVK.a" -path "*/ios*" | head -1)
         echo "MVK_LIB=${MVK_LIB}" >> $GITHUB_ENV
-        echo "Found: $MVK_LIB"
 
-    # The repo's root CMakeLists.txt is the iOS-specific one (no project()).
-    # We place a proper root cmake that has cmake_minimum_required + project()
-    # and delegates to vita3k/CMakeLists.txt via add_subdirectory.
     - name: Patch submodules for iOS
-      run: |
-        python3 -c "
-import re, sys
-path = 'external/cubeb/CMakeLists.txt'
-txt = open(path).read()
-txt = txt.replace(
-    'check_include_files(AudioUnit/AudioUnit.h USE_AUDIOUNIT)\nif(USE_AUDIOUNIT)',
-    'check_include_files(AudioUnit/AudioUnit.h USE_AUDIOUNIT)\nif(USE_AUDIOUNIT AND NOT CMAKE_SYSTEM_NAME STREQUAL \"iOS\")'
-)
-open(path, 'w').write(txt)
-print('cubeb patched')
-"
+      run: python3 patch_ios.py
 
     - name: Place root CMakeLists.txt
       run: cp root_CMakeLists.txt CMakeLists.txt
@@ -95,20 +80,15 @@ print('cubeb patched')
 
     - name: Build & Archive
       run: |
-        # Discover the generated Xcode project (CMake may name it after the project())
         XCPROJ=$(find "$BUILD_DIR" -name "*.xcodeproj" -maxdepth 2 | head -1)
         if [ -z "$XCPROJ" ]; then
           echo "ERROR: No .xcodeproj found in $BUILD_DIR"
-          ls -la "$BUILD_DIR" || true
           exit 1
         fi
-        echo "Using Xcode project: $XCPROJ"
-
-        # List available schemes so we can pick the right one
+        echo "Using: $XCPROJ"
         SCHEME=$(xcodebuild -project "$XCPROJ" -list 2>/dev/null \
           | awk '/Schemes:/{found=1; next} found && NF{print $1; exit}')
-        echo "Using scheme: $SCHEME"
-
+        echo "Scheme: $SCHEME"
         xcodebuild \
           -project "$XCPROJ" \
           -scheme "$SCHEME" \
@@ -121,13 +101,7 @@ print('cubeb patched')
           CODE_SIGNING_ALLOWED=NO \
           COMPILER_INDEX_STORE_ENABLE=NO \
           2>&1 | xcpretty --color
-
-        # xcpretty can mask failures — check explicitly
-        if [ ! -d "$ARCHIVE_PATH" ]; then
-          echo "ERROR: Archive not created at $ARCHIVE_PATH"
-          exit 1
-        fi
-        echo "Archive created successfully: $ARCHIVE_PATH"
+        test -d "$ARCHIVE_PATH" || { echo "ERROR: archive not created"; exit 1; }
 
     - name: Package unsigned IPA
       run: |
