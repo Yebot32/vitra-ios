@@ -81,9 +81,23 @@ jobs:
 
     - name: Build & Archive
       run: |
+        # Discover the generated Xcode project (CMake may name it after the project())
+        XCPROJ=$(find "$BUILD_DIR" -name "*.xcodeproj" -maxdepth 2 | head -1)
+        if [ -z "$XCPROJ" ]; then
+          echo "ERROR: No .xcodeproj found in $BUILD_DIR"
+          ls -la "$BUILD_DIR" || true
+          exit 1
+        fi
+        echo "Using Xcode project: $XCPROJ"
+
+        # List available schemes so we can pick the right one
+        SCHEME=$(xcodebuild -project "$XCPROJ" -list 2>/dev/null \
+          | awk '/Schemes:/{found=1; next} found && NF{print $1; exit}')
+        echo "Using scheme: $SCHEME"
+
         xcodebuild \
-          -project "$BUILD_DIR/Vitra.xcodeproj" \
-          -scheme Vitra \
+          -project "$XCPROJ" \
+          -scheme "$SCHEME" \
           -configuration Release \
           -destination "generic/platform=iOS" \
           -archivePath "$ARCHIVE_PATH" \
@@ -93,6 +107,13 @@ jobs:
           CODE_SIGNING_ALLOWED=NO \
           COMPILER_INDEX_STORE_ENABLE=NO \
           2>&1 | xcpretty --color
+
+        # xcpretty can mask failures — check explicitly
+        if [ ! -d "$ARCHIVE_PATH" ]; then
+          echo "ERROR: Archive not created at $ARCHIVE_PATH"
+          exit 1
+        fi
+        echo "Archive created successfully: $ARCHIVE_PATH"
 
     - name: Package unsigned IPA
       run: |
