@@ -461,8 +461,8 @@ endif()
 # Use XDG desktop portals on Linux
 set(NFD_PORTAL ON)
 
-if(NOT ANDROID)
-	# nativefiledialog-extended
+if(NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	# nativefiledialog-extended requires AppKit (macOS/Linux only)
 	add_subdirectory(nativefiledialog-extended)
 
 	# Create alias to prevent the need of multiple changes in case the target name changes
