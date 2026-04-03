@@ -49,14 +49,30 @@ jobs:
     # and delegates to vita3k/CMakeLists.txt via add_subdirectory.
     - name: Patch submodules for iOS
       run: |
-        # cubeb_osx_run_loop.cpp includes CoreAudio/AudioHardware.h
-        # which is macOS-only and missing on iOS. Patch cubeb's CMakeLists
-        # to skip that file on iOS without editing the submodule repo.
         CUBEB_CMAKE="external/cubeb/CMakeLists.txt"
-        sed -i '' \
-          's|src/cubeb_osx_run_loop.cpp||g' \
-          "$CUBEB_CMAKE"
-        echo "Patched $CUBEB_CMAKE"
+
+        # cubeb_audiounit.cpp and cubeb_osx_run_loop.cpp both use
+        # CoreAudio types (AudioObjectPropertyAddress, kAudioHardware*)
+        # that are macOS-only and don't exist on iOS.
+        # Wrap the entire USE_AUDIOUNIT block so it is skipped on iOS.
+        # We use Python for reliable multi-line sed on macOS.
+        python3 - "$CUBEB_CMAKE" << 'PYEOF'
+import sys, re
+path = sys.argv[1]
+with open(path, 'r') as f:
+    content = f.read()
+
+old = '''check_include_files(AudioUnit/AudioUnit.h USE_AUDIOUNIT)
+if(USE_AUDIOUNIT)'''
+new = '''check_include_files(AudioUnit/AudioUnit.h USE_AUDIOUNIT)
+# cubeb_audiounit uses CoreAudio HAL APIs that are macOS-only (not iOS)
+if(USE_AUDIOUNIT AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")'''
+
+content = content.replace(old, new)
+with open(path, 'w') as f:
+    f.write(content)
+print("Patched", path)
+PYEOF
 
     - name: Place root CMakeLists.txt
       run: cp root_CMakeLists.txt CMakeLists.txt
