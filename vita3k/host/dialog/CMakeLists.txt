@@ -2,6 +2,12 @@ if(ANDROID)
 	add_library(host_dialog STATIC
 		src/filesystem_android.cpp
 	)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	# iOS: no AppKit / nfd — use a stub that returns CANCEL.
+	# File installation is handled via the Files app / AirDrop.
+	add_library(host_dialog STATIC
+		src/filesystem_ios.cpp
+	)
 else()
 	add_library(host_dialog STATIC
 		src/filesystem_nfd.cpp
@@ -17,6 +23,8 @@ target_include_directories(host_dialog PUBLIC include)
 target_link_libraries(host_dialog PUBLIC util)
 if(ANDROID)
 	target_link_libraries(host_dialog PRIVATE SDL3::SDL3 android)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	# No extra link dependencies for the iOS stub
 else()
 	target_link_libraries(host_dialog PRIVATE NFDe::NFDe)
 endif()
