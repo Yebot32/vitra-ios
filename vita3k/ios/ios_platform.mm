@@ -50,7 +50,8 @@
     ml.maximumDrawableCount = 2;
 
     // ProMotion / 120 Hz support
-    if (@available(iOS 15.0, *)) {
+    // ProMotion / 120 Hz support — CAMetalLayer.preferredFrameRateRange is iOS 15.4+
+    if (@available(iOS 15.4, *)) {
         CAFrameRateRange range = CAFrameRateRangeMake(30, 120, 60);
         ml.preferredFrameRateRange = range;
     }
@@ -112,7 +113,7 @@
     _displayLink = [CADisplayLink displayLinkWithTarget:self
                                                selector:@selector(_tick:)];
 
-    if (@available(iOS 15.0, *)) {
+    if (@available(iOS 15.4, *)) {
         _displayLink.preferredFrameRateRange = CAFrameRateRangeMake(30, 120, 60);
     } else {
         _displayLink.preferredFramesPerSecond = 60;
