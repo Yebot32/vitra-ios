@@ -11,16 +11,15 @@
 //   • Portability subset extension enabled
 //   • ANDROID blocks retained for reference but guarded
 
-// ── MacTypes.h / vita3k Ptr<T> clash prevention ──────────────────────────
-// vita3k/mem/include/mem/ptr.h defines a global `class Ptr<T>` template.
-// Apple's MacTypes.h also defines `typedef char* Ptr` — hard conflict.
-// We suppress MacTypes.h entirely and manually provide ALL its types so that
-// CoreFoundation headers (CFBase.h, CFArray.h, CFByteOrder.h, etc.) still compile.
-// The one thing we intentionally omit: `typedef char* Ptr` and `typedef Ptr* Handle`.
+// ── Complete MacTypes.h replacement ─────────────────────────────────────
+// vita3k/mem/ptr.h defines global `class Ptr<T>`, conflicting with
+// MacTypes.h's `typedef char* Ptr`. We suppress MacTypes.h entirely and
+// provide every type that Apple's CoreFoundation/CFString/CFBase headers need.
+// The two conflicting typedefs (Ptr, Handle) are intentionally omitted.
 #ifdef __APPLE__
-#define __MACTYPES__            // suppress MacTypes.h content
+#define __MACTYPES__
 
-// Signed/unsigned integer types
+// ── Integer types ────────────────────────────────────────────────────────
 typedef unsigned char           UInt8;
 typedef unsigned short          UInt16;
 typedef unsigned int            UInt32;
@@ -30,25 +29,51 @@ typedef signed short            SInt16;
 typedef signed int              SInt32;
 typedef signed long long        SInt64;
 
-// Boolean and floating point (required by CFBase.h, CFByteOrder.h)
+// ── Boolean and floating point ───────────────────────────────────────────
 typedef unsigned char           Boolean;
 typedef float                   Float32;
 typedef double                  Float64;
 
-// Legacy Mac types used by CoreFoundation
+// ── Character types (required by CFString.h) ─────────────────────────────
+typedef unsigned short          UniChar;        // UTF-16 code unit
+typedef unsigned int            UTF32Char;      // UTF-32 code unit
+typedef unsigned short          UTF16Char;      // UTF-16 code unit
+typedef unsigned char           UTF8Char;       // UTF-8 code unit
+typedef const UniChar *         ConstUniCharPtr;
+typedef UInt32                  UniCharCount;
+
+// ── Pascal string types (required by CFString.h) ─────────────────────────
+typedef unsigned char *         StringPtr;
+typedef const unsigned char *   ConstStringPtr;
+typedef unsigned char           Str255[256];
+typedef unsigned char           Str63[64];
+typedef unsigned char           Str32[33];
+typedef unsigned char           Str15[16];
+typedef const unsigned char *   ConstStr255Param;
+typedef const unsigned char *   ConstStr63Param;
+typedef const unsigned char *   ConstStr32Param;
+
+// ── Legacy Mac types ──────────────────────────────────────────────────────
 typedef SInt32                  OSStatus;
 typedef SInt16                  OSErr;
 typedef unsigned int            FourCharCode;
 typedef FourCharCode            OSType;
-typedef unsigned char           Str255[256];
-typedef const unsigned char *   ConstStr255Param;
+typedef FourCharCode            ResType;
 typedef long                    Size;
 typedef long                    LogicalAddress;
 typedef unsigned long           ByteCount;
 typedef unsigned long           ByteOffset;
-// NOTE: 'Ptr' (typedef char*) and 'Handle' (typedef Ptr*) intentionally omitted
-// — they conflict with vita3k's global class Ptr<T> template.
+typedef UInt32                  OptionBits;
+typedef UInt32                  ItemCount;
+typedef SInt32                  Fixed;
+typedef Fixed *                 FixedPtr;
+typedef SInt32                  Fract;
+typedef SInt32                  ShortFixed;
+
+// 'Ptr' (typedef char*) and 'Handle' (typedef Ptr*) intentionally omitted:
+// they conflict with vita3k's global class Ptr<T> template.
 #endif
+
 
 // ── Standard Vita3K includes ──────────────────────────────────────────────
 #include <renderer/functions.h>
