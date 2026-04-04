@@ -25,9 +25,9 @@
 #include <string>
 #include <vector>
 
-// Bring in the global dynamic dispatcher that Vita3K already sets up
-// in vita3k/renderer/src/vulkan/allocator.cpp
-VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE_EXTERN
+// We use vkGetInstanceProcAddr directly below — no C++ dispatch loader needed.
+// (VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE_EXTERN requires
+//  VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 which is not set in this translation unit.)
 
 namespace ios {
 
@@ -133,7 +133,7 @@ int create_vulkan_surface(void* vkInstance, void** outSurface, const void* alloc
         .sType  = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT,
         .pNext  = nullptr,
         .flags  = 0,
-        .pLayer = (__bridge const CAMetalLayer*)layer,
+        .pLayer = layer,
     };
 
     auto fn = reinterpret_cast<PFN_vkCreateMetalSurfaceEXT>(
