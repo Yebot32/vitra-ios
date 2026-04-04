@@ -11,6 +11,23 @@
 //   • Portability subset extension enabled
 //   • ANDROID blocks retained for reference but guarded
 
+// ── MacTypes.h / vita3k Ptr<T> clash prevention ──────────────────────────
+// vita3k/mem/include/mem/ptr.h defines a global `class Ptr<T>` template.
+// Apple's MacTypes.h (included transitively via Foundation/MoltenVK) also
+// defines `typedef char* Ptr` in the global namespace — a hard conflict.
+// Solution: define the MacTypes.h include guard before any vita3k headers
+// so the typedef is never emitted, then supply only the two MacTypes aliases
+// actually used by Apple SDK headers we include below.
+#ifdef __APPLE__
+#define __MACTYPES__            // suppress MacTypes.h content
+typedef unsigned char   UInt8;  // MacTypes.h alias used by CoreFoundation
+typedef unsigned short  UInt16;
+typedef unsigned int    UInt32;
+typedef signed char     SInt8;
+typedef signed short    SInt16;
+typedef signed int      SInt32;
+#endif
+
 // ── Standard Vita3K includes ──────────────────────────────────────────────
 #include <renderer/functions.h>
 #include <renderer/types.h>
