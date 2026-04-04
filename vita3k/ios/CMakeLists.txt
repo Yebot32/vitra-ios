@@ -10,7 +10,7 @@ endif()
 set(IOS_SOURCES
     ios_platform.mm          # Metal context, frame pacing, thermal management
     ios_vulkan_bridge.mm     # MoltenVK layer settings + CAMetalLayer surface
-    ios_renderer.cpp         # iOS-patched Vulkan renderer (create + swap_window)
+    ios_renderer.mm          # iOS-patched Vulkan renderer (renamed .mm to avoid MacTypes.h clash)
     ios_overlay.mm           # On-screen PS Vita controller (ImGui draw lists + SDL virtual joystick)
 )
 
@@ -37,6 +37,7 @@ add_library(vita3k_ios STATIC ${IOS_SOURCES} ${IOS_HEADERS})
 set_source_files_properties(
     ios_platform.mm
     ios_vulkan_bridge.mm
+    ios_renderer.mm
     ios_overlay.mm
     PROPERTIES
         COMPILE_FLAGS "-fobjc-arc -fmodules"

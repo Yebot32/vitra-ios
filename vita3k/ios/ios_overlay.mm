@@ -8,6 +8,7 @@
 #if TARGET_OS_IOS
 
 #include <emuenv/state.h>
+#include <config/state.h>   // full Config definition (pstv_mode etc.)
 #include <gui/state.h>
 #include <touch/functions.h>
 #include <util/log.h>
