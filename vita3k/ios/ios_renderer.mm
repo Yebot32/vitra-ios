@@ -13,19 +13,41 @@
 
 // ── MacTypes.h / vita3k Ptr<T> clash prevention ──────────────────────────
 // vita3k/mem/include/mem/ptr.h defines a global `class Ptr<T>` template.
-// Apple's MacTypes.h (included transitively via Foundation/MoltenVK) also
-// defines `typedef char* Ptr` in the global namespace — a hard conflict.
-// Solution: define the MacTypes.h include guard before any vita3k headers
-// so the typedef is never emitted, then supply only the two MacTypes aliases
-// actually used by Apple SDK headers we include below.
+// Apple's MacTypes.h also defines `typedef char* Ptr` — hard conflict.
+// We suppress MacTypes.h entirely and manually provide ALL its types so that
+// CoreFoundation headers (CFBase.h, CFArray.h, CFByteOrder.h, etc.) still compile.
+// The one thing we intentionally omit: `typedef char* Ptr` and `typedef Ptr* Handle`.
 #ifdef __APPLE__
 #define __MACTYPES__            // suppress MacTypes.h content
-typedef unsigned char   UInt8;  // MacTypes.h alias used by CoreFoundation
-typedef unsigned short  UInt16;
-typedef unsigned int    UInt32;
-typedef signed char     SInt8;
-typedef signed short    SInt16;
-typedef signed int      SInt32;
+
+// Signed/unsigned integer types
+typedef unsigned char           UInt8;
+typedef unsigned short          UInt16;
+typedef unsigned int            UInt32;
+typedef unsigned long long      UInt64;
+typedef signed char             SInt8;
+typedef signed short            SInt16;
+typedef signed int              SInt32;
+typedef signed long long        SInt64;
+
+// Boolean and floating point (required by CFBase.h, CFByteOrder.h)
+typedef unsigned char           Boolean;
+typedef float                   Float32;
+typedef double                  Float64;
+
+// Legacy Mac types used by CoreFoundation
+typedef SInt32                  OSStatus;
+typedef SInt16                  OSErr;
+typedef unsigned int            FourCharCode;
+typedef FourCharCode            OSType;
+typedef unsigned char           Str255[256];
+typedef const unsigned char *   ConstStr255Param;
+typedef long                    Size;
+typedef long                    LogicalAddress;
+typedef unsigned long           ByteCount;
+typedef unsigned long           ByteOffset;
+// NOTE: 'Ptr' (typedef char*) and 'Handle' (typedef Ptr*) intentionally omitted
+// — they conflict with vita3k's global class Ptr<T> template.
 #endif
 
 // ── Standard Vita3K includes ──────────────────────────────────────────────

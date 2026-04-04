@@ -7,12 +7,28 @@
 // See ios_renderer.mm for full explanation.
 #ifdef __APPLE__
 #define __MACTYPES__
-typedef unsigned char  UInt8;
-typedef unsigned short UInt16;
-typedef unsigned int   UInt32;
-typedef signed char    SInt8;
-typedef signed short   SInt16;
-typedef signed int     SInt32;
+typedef unsigned char           UInt8;
+typedef unsigned short          UInt16;
+typedef unsigned int            UInt32;
+typedef unsigned long long      UInt64;
+typedef signed char             SInt8;
+typedef signed short            SInt16;
+typedef signed int              SInt32;
+typedef signed long long        SInt64;
+typedef unsigned char           Boolean;
+typedef float                   Float32;
+typedef double                  Float64;
+typedef SInt32                  OSStatus;
+typedef SInt16                  OSErr;
+typedef unsigned int            FourCharCode;
+typedef FourCharCode            OSType;
+typedef unsigned char           Str255[256];
+typedef const unsigned char *   ConstStr255Param;
+typedef long                    Size;
+typedef long                    LogicalAddress;
+typedef unsigned long           ByteCount;
+typedef unsigned long           ByteOffset;
+// 'Ptr' and 'Handle' intentionally omitted — conflict with vita3k Ptr<T>.
 #endif
 
 #include "ios_vulkan_bridge.h"
