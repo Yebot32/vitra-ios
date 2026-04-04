@@ -62,6 +62,8 @@ target_link_libraries(vita3k_ios
         MoltenVK          # provided by external/MoltenVK or system SDK
     PRIVATE
         renderer          # the main Vita3K renderer target
+        SDL3::SDL3        # SDL3/SDL_vulkan.h + SDL3/SDL_joystick.h etc.
+        gui               # gui/state.h
         util
         touch             # handle_touch_event forwarding
         imgui             # overlay draw lists
