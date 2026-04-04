@@ -48,6 +48,7 @@ target_include_directories(vita3k_ios
         ${CMAKE_CURRENT_SOURCE_DIR}/..  # so #include "ios/ios_platform.h" works
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/external/concurrentqueue  # blockingconcurrentqueue.h for ios_renderer.cpp
 )
 
 # ── Frameworks & libraries ────────────────────────────────────────────────────

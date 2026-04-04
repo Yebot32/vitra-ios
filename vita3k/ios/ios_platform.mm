@@ -48,13 +48,9 @@
     // Limit the number of inflight drawables to reduce latency.
     // 3 = max pipeline depth (triple buffering); 2 is better for latency.
     ml.maximumDrawableCount = 2;
-
-    // ProMotion / 120 Hz support
-    // ProMotion / 120 Hz support — CAMetalLayer.preferredFrameRateRange is iOS 15.4+
-    if (@available(iOS 15.4, *)) {
-        CAFrameRateRange range = CAFrameRateRangeMake(30, 120, 60);
-        ml.preferredFrameRateRange = range;
-    }
+    // NOTE: CAMetalLayer does NOT have preferredFrameRateRange on iOS.
+    // ProMotion 120Hz is controlled via CADisplayLink.preferredFrameRateRange
+    // in VitaDisplayLink below.
 
     [self _updateDrawableSize];
 
