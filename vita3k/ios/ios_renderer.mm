@@ -70,6 +70,11 @@ typedef Fixed *                 FixedPtr;
 typedef SInt32                  Fract;
 typedef SInt32                  ShortFixed;
 
+// Locale types (required by CFLocale.h)
+typedef SInt16                  LangCode;
+typedef SInt16                  RegionCode;
+typedef SInt16                  ScriptCode;
+
 // 'Ptr' (typedef char*) and 'Handle' (typedef Ptr*) intentionally omitted:
 // they conflict with vita3k's global class Ptr<T> template.
 #endif
