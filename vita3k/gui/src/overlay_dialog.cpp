@@ -35,9 +35,9 @@
 namespace gui {
 
 enum struct OverlayShowMask : int {
-    Basic = 1, // Basic Vita Gamepad
+    Basic = 1,
     L2R2 = 2,
-    TouchScreenSwitch = 4, // Button to switch between the front and back touchscreen
+    TouchScreenSwitch = 4,
 };
 
 int get_overlay_display_mask(const Config &cfg) {
@@ -53,138 +53,40 @@ int get_overlay_display_mask(const Config &cfg) {
     return mask;
 }
 
+// ── Platform-specific overlay control functions ───────────────────────────────
+
 #ifdef __ANDROID__
+
 void set_controller_overlay_state(int overlay_mask, bool edit, bool reset) {
-    // retrieve the JNI environment.
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
-
-    // retrieve the Java instance of the SDLActivity
     jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
-
-    // find the Java class of the activity. It should be SDLActivity or a subclass of it.
     jclass clazz(env->GetObjectClass(activity));
-
-    // find the identifier of the method to call
     jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayState", "(IZZ)V");
-
-    // effectively call the Java method
     env->CallVoidMethod(activity, method_id, overlay_mask, edit, reset);
-
-    // clean up the local references.
     env->DeleteLocalRef(activity);
     env->DeleteLocalRef(clazz);
 }
 
 void set_controller_overlay_scale(float scale) {
-    // retrieve the JNI environment.
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
-
-    // retrieve the Java instance of the SDLActivity
     jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
-
-    // find the Java class of the activity. It should be SDLActivity or a subclass of it.
     jclass clazz(env->GetObjectClass(activity));
-
-    // find the identifier of the method to call
     jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayScale", "(F)V");
-
-    // effectively call the Java method
     env->CallVoidMethod(activity, method_id, scale);
-
-    // clean up the local references.
     env->DeleteLocalRef(activity);
     env->DeleteLocalRef(clazz);
 }
 
 void set_controller_overlay_opacity(int opacity) {
-    // retrieve the JNI environment.
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
-
-    // retrieve the Java instance of the SDLActivity
     jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
-
-    // find the Java class of the activity. It should be SDLActivity or a subclass of it.
     jclass clazz(env->GetObjectClass(activity));
-
-    // find the identifier of the method to call
     jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayOpacity", "(I)V");
-
-    // effectively call the Java method
     env->CallVoidMethod(activity, method_id, opacity);
-
-    // clean up the local references.
     env->DeleteLocalRef(activity);
     env->DeleteLocalRef(clazz);
 }
 
-void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
-    const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
-    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.manual_dpi_scale, 0.f);
-    ImGui::SetNextWindowPos(ImVec2(emuenv.logical_viewport_pos.x + (display_size.x / 2.f), emuenv.logical_viewport_pos.y + (display_size.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::Begin("##overlay", &gui.controls_menu.overlay_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::SetWindowFontScale(RES_SCALE.x);
-
-    auto &lang = gui.lang.overlay;
-    auto &common = emuenv.common_dialog.lang.common;
-
-    TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["title"].c_str());
-    ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::Spacing();
-
-    static bool overlay_editing = false;
-
-    TextColoredCentered(GUI_COLOR_TEXT_MENUBAR, lang["gamepad_overlay"].c_str());
-    ImGui::Spacing();
-    if (ImGui::Checkbox(lang["enable_gamepad_overlay"].c_str(), &emuenv.cfg.enable_gamepad_overlay))
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-
-    const char *overlay_edit_text = overlay_editing ? lang["hide_gamepad_overlay"].c_str() : lang["modify_gamepad_overlay"].c_str();
-    if (ImGui::Button(overlay_edit_text)) {
-        overlay_editing = !overlay_editing;
-        set_controller_overlay_state(overlay_editing ? get_overlay_display_mask(emuenv.cfg) : 0, overlay_editing);
-    }
-    ImGui::Spacing();
-    if (overlay_editing && ImGui::SliderFloat(lang["overlay_scale"].c_str(), &emuenv.cfg.overlay_scale, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
-        set_controller_overlay_scale(emuenv.cfg.overlay_scale);
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-    }
-    ImGui::Spacing();
-    if (overlay_editing && ImGui::SliderInt(lang["overlay_opacity"].c_str(), &emuenv.cfg.overlay_opacity, 0, 100, "%d%%")) {
-        set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-    }
-    if (overlay_editing && ImGui::Button(lang["reset_gamepad"].c_str())) {
-        set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true, true);
-        emuenv.cfg.overlay_scale = 1.0f;
-        emuenv.cfg.overlay_opacity = 100;
-        set_controller_overlay_scale(emuenv.cfg.overlay_scale);
-        set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-    }
-    ImGui::Spacing();
-    ImGui::Separator();
-    if (emuenv.cfg.enable_gamepad_overlay && ImGui::Checkbox(lang["overlay_show_touch_switch"].c_str(), &emuenv.cfg.overlay_show_touch_switch)) {
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-        if (overlay_editing)
-            set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true);
-    }
-    ImGui::Text("%s", lang["l2_r2_triggers"].c_str());
-    ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::Spacing();
-    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
-    if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE)) {
-        set_controller_overlay_state(0);
-        overlay_editing = false;
-        gui.controls_menu.overlay_dialog = false;
-    }
-
-    ImGui::End();
-}
-#ifdef __ANDROID__
-// ... full Android JNI implementation above ...
 #elif defined(__APPLE__) && TARGET_OS_IOS
 
 void set_controller_overlay_state(int overlay_mask, bool edit, bool reset) {
@@ -192,16 +94,26 @@ void set_controller_overlay_state(int overlay_mask, bool edit, bool reset) {
     ios_overlay::set_edit_mode(edit);
     if (reset) ios_overlay::reset_layout();
 }
+
 void set_controller_overlay_scale(float scale) {
     ios_overlay::set_scale(scale);
 }
+
 void set_controller_overlay_opacity(int opacity) {
     ios_overlay::set_opacity(opacity);
 }
 
+#else
+
+void set_controller_overlay_state(int /*overlay_mask*/, bool /*edit*/, bool /*reset*/) {}
+void set_controller_overlay_scale(float /*scale*/) {}
+void set_controller_overlay_opacity(int /*opacity*/) {}
+
+#endif
+
+// ── Shared ImGui overlay dialog (all platforms) ───────────────────────────────
+
 void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    // Reuse the Android ImGui dialog — it is identical in structure.
-    // We just route the three helper calls above to ios_overlay instead of JNI.
     const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
     static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.manual_dpi_scale, 0.f);
@@ -216,7 +128,9 @@ void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
     auto &common = emuenv.common_dialog.lang.common;
 
     TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["title"].c_str());
-    ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
 
     static bool overlay_editing = false;
 
@@ -239,6 +153,7 @@ void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
         set_controller_overlay_scale(emuenv.cfg.overlay_scale);
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
+    ImGui::Spacing();
     if (overlay_editing && ImGui::SliderInt(lang["overlay_opacity"].c_str(),
             &emuenv.cfg.overlay_opacity, 0, 100, "%d%%")) {
         set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
@@ -252,13 +167,19 @@ void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
         set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
-    ImGui::Spacing(); ImGui::Separator();
+    ImGui::Spacing();
+    ImGui::Separator();
     if (emuenv.cfg.enable_gamepad_overlay &&
         ImGui::Checkbox(lang["overlay_show_touch_switch"].c_str(),
                         &emuenv.cfg.overlay_show_touch_switch)) {
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        if (overlay_editing)
+            set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true);
     }
-    ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
+    ImGui::Text("%s", lang["l2_r2_triggers"].c_str());
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
     if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE)) {
         set_controller_overlay_state(0);
@@ -267,13 +188,5 @@ void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
     }
     ImGui::End();
 }
-
-#else
-
-void set_controller_overlay_state(int overlay_mask, bool edit, bool reset) {}
-void set_controller_overlay_scale(float scale) {}
-void set_controller_overlay_opacity(int opacity) {}
-
-#endif
 
 } // namespace gui

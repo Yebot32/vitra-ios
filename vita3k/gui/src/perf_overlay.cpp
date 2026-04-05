@@ -15,6 +15,57 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+// Suppress MacTypes.h Ptr/Handle typedefs that conflict with vita3k Ptr<T>.
+// Must be first before any include that reaches MacTypes.h.
+#ifdef __APPLE__
+#define __MACTYPES__
+typedef unsigned char           UInt8;
+typedef unsigned short          UInt16;
+typedef unsigned int            UInt32;
+typedef unsigned long long      UInt64;
+typedef signed char             SInt8;
+typedef signed short            SInt16;
+typedef signed int              SInt32;
+typedef signed long long        SInt64;
+typedef unsigned char           Boolean;
+typedef float                   Float32;
+typedef double                  Float64;
+typedef unsigned short          UniChar;
+typedef unsigned int            UTF32Char;
+typedef unsigned short          UTF16Char;
+typedef unsigned char           UTF8Char;
+typedef const UniChar *         ConstUniCharPtr;
+typedef UInt32                  UniCharCount;
+typedef unsigned char *         StringPtr;
+typedef const unsigned char *   ConstStringPtr;
+typedef unsigned char           Str255[256];
+typedef unsigned char           Str63[64];
+typedef unsigned char           Str32[33];
+typedef unsigned char           Str15[16];
+typedef const unsigned char *   ConstStr255Param;
+typedef const unsigned char *   ConstStr63Param;
+typedef const unsigned char *   ConstStr32Param;
+typedef SInt32                  OSStatus;
+typedef SInt16                  OSErr;
+typedef unsigned int            FourCharCode;
+typedef FourCharCode            OSType;
+typedef FourCharCode            ResType;
+typedef long                    Size;
+typedef long                    LogicalAddress;
+typedef unsigned long           ByteCount;
+typedef unsigned long           ByteOffset;
+typedef UInt32                  OptionBits;
+typedef UInt32                  ItemCount;
+typedef SInt32                  Fixed;
+typedef Fixed *                 FixedPtr;
+typedef SInt32                  Fract;
+typedef SInt32                  ShortFixed;
+typedef SInt16                  LangCode;
+typedef SInt16                  RegionCode;
+typedef SInt16                  ScriptCode;
+// 'Ptr' and 'Handle' omitted — conflict with vita3k class Ptr<T>.
+#endif
+
 #include "private.h"
 
 #include <config/state.h>
