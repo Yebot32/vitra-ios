@@ -27,7 +27,6 @@ set(GUI_SOURCES
 	src/main_menubar.cpp
 	src/manual.cpp
 	src/mutexes_dialog.cpp
-	src/perf_overlay.cpp
 	src/pkg_install_dialog.cpp
 	src/private.h
 	src/reinstall.cpp
@@ -51,10 +50,20 @@ set(GUI_SOURCES
 
 # Add macOS-specific Objective-C++ files
 if(APPLE)
-	list(APPEND GUI_SOURCES
-		include/gui/macos_helper.h
-		src/macos_helper.mm
-	)
+	if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+		# perf_overlay.cpp includes ios_platform.h (ObjC) so must be compiled as ObjC++
+		list(APPEND GUI_SOURCES src/perf_overlay.mm)
+		set_source_files_properties(src/perf_overlay.mm PROPERTIES
+			COMPILE_FLAGS "-fobjc-arc -fmodules")
+	else()
+		list(APPEND GUI_SOURCES
+			src/perf_overlay.cpp
+			include/gui/macos_helper.h
+			src/macos_helper.mm
+		)
+	endif()
+else()
+	list(APPEND GUI_SOURCES src/perf_overlay.cpp)
 endif()
 
 add_library(gui STATIC ${GUI_SOURCES})
