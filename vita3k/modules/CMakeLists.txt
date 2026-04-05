@@ -210,7 +210,7 @@ set(SOURCE_LIST
 	SceWlanBt/SceWlan.cpp
 )
 
-if(APPLE)
+if(APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
     list(APPEND SOURCE_LIST
         SceNet/macos_net_helper.h
         SceNet/macos_net_helper.cpp
