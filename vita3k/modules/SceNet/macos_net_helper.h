@@ -20,5 +20,18 @@
 #include <cstdint>
 #include <cstring>
 
+#if TARGET_OS_IOS
+// SCDynamicStore is macOS-only. On iOS, network interface queries are not
+// available to sandboxed apps — return false to signal unavailability.
+#include <TargetConditionals.h>
+inline bool get_primary_interface_name(char * /*dest*/, size_t /*bufferSize*/) { return false; }
+inline bool get_mac_address(const char * /*hint*/, uint8_t mac[6]) {
+    // Use a deterministic dummy MAC rather than crashing
+    const uint8_t dummy[6] = { 0x02, 0x00, 0x00, 0x00, 0x00, 0x01 };
+    memcpy(mac, dummy, 6);
+    return false;
+}
+#else
 bool get_primary_interface_name(char *dest, size_t bufferSize);
 bool get_mac_address(const char *hint, uint8_t mac[6]);
+#endif
