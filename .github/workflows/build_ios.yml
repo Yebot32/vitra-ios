@@ -100,6 +100,9 @@ jobs:
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO \
           COMPILER_INDEX_STORE_ENABLE=NO \
+          IPHONEOS_DEPLOYMENT_TARGET=15.0 \
+          CLANG_CXX_LANGUAGE_STANDARD=c++20 \
+          CLANG_CXX_LIBRARY=libc++ \
           2>&1 | xcpretty --color
         test -d "$ARCHIVE_PATH" || { echo "ERROR: archive not created"; exit 1; }
 
