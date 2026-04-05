@@ -86,8 +86,14 @@ jobs:
           exit 1
         fi
         echo "Using: $XCPROJ"
+        # Find the app scheme (vita3k or Vitra), not ALL_BUILD which doesn't
+        # propagate xcodebuild command-line overrides to dependent library targets.
         SCHEME=$(xcodebuild -project "$XCPROJ" -list 2>/dev/null \
-          | awk '/Schemes:/{found=1; next} found && NF{print $1; exit}')
+          | awk '/Schemes:/{found=1; next} found && NF{gsub(/^[[:space:]]+/,""); if ($0 != "ALL_BUILD" && $0 != "ZERO_CHECK" && $0 != "install" && $0 != "RUN_TESTS" && $0 != "PACKAGE") {print $0; exit}}')
+        if [ -z "$SCHEME" ]; then
+          SCHEME=$(xcodebuild -project "$XCPROJ" -list 2>/dev/null \
+            | awk '/Schemes:/{found=1; next} found && NF{print $1; exit}')
+        fi
         echo "Scheme: $SCHEME"
         xcodebuild \
           -project "$XCPROJ" \
