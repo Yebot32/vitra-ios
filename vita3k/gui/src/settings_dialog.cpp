@@ -173,7 +173,7 @@ static bool get_custom_config(EmuEnvState &emuenv, const std::string &app_path) 
             if (!config_child.child("gpu").empty()) {
                 const auto gpu_child = config_child.child("gpu");
                 config.backend_renderer = gpu_child.attribute("backend-renderer").as_string();
-#if defined(__ANDROID__) || (defined(__APPLE__) && TARGET_OS_IOS)
+#if defined(__ANDROID__)
                 config.custom_driver_name = gpu_child.attribute("custom-driver-name").as_string();
 #endif
                 config.high_accuracy = gpu_child.attribute("high-accuracy").as_bool();
@@ -255,7 +255,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.modules_mode = emuenv.cfg.modules_mode;
         config.lle_modules = emuenv.cfg.lle_modules;
         config.backend_renderer = emuenv.cfg.backend_renderer;
-#if defined(__ANDROID__) || (defined(__APPLE__) && TARGET_OS_IOS)
+#if defined(__ANDROID__)
         config.custom_driver_name = emuenv.cfg.custom_driver_name;
 #endif
         config.high_accuracy = emuenv.cfg.high_accuracy;
@@ -349,7 +349,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         // GPU
         auto gpu_child = config_child.append_child("gpu");
         gpu_child.append_attribute("backend-renderer") = config.backend_renderer.c_str();
-#if defined(__ANDROID__) || (defined(__APPLE__) && TARGET_OS_IOS)
+#if defined(__ANDROID__)
         gpu_child.append_attribute("custom-driver-name") = config.custom_driver_name.c_str();
 #endif
         gpu_child.append_attribute("high-accuracy") = config.high_accuracy;
@@ -391,7 +391,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.modules_mode = config.modules_mode;
         emuenv.cfg.lle_modules = config.lle_modules;
         emuenv.cfg.backend_renderer = config.backend_renderer;
-#if defined(__ANDROID__) || (defined(__APPLE__) && TARGET_OS_IOS)
+#if defined(__ANDROID__)
         emuenv.cfg.custom_driver_name = config.custom_driver_name;
 #endif
         emuenv.cfg.high_accuracy = config.high_accuracy;
@@ -456,7 +456,7 @@ void set_current_config(EmuEnvState &emuenv, const std::string &app_path) {
         emuenv.cfg.current_config.modules_mode = emuenv.cfg.modules_mode;
         emuenv.cfg.current_config.lle_modules = emuenv.cfg.lle_modules;
         emuenv.cfg.current_config.backend_renderer = emuenv.cfg.backend_renderer;
-#if defined(__ANDROID__) || (defined(__APPLE__) && TARGET_OS_IOS)
+#if defined(__ANDROID__)
         emuenv.cfg.current_config.custom_driver_name = emuenv.cfg.custom_driver_name;
 #endif
         emuenv.cfg.current_config.high_accuracy = emuenv.cfg.high_accuracy;
@@ -939,7 +939,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::EndDisabled();
         }
 
-#if defined(__ANDROID__) || (defined(__APPLE__) && TARGET_OS_IOS)
+#if defined(__ANDROID__)
         if (emuenv.renderer->support_custom_drivers()) {
             ImGui::Spacing();
             ImGui::Checkbox(lang.gpu["turbo_mode"].c_str(), &emuenv.cfg.turbo_mode);
@@ -1605,7 +1605,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto is_apply = !emuenv.io.app_path.empty() && (!is_custom_config || (emuenv.app_path == emuenv.io.app_path));
     const auto is_reboot = !emuenv.io.app_path.empty()
         && ((emuenv.renderer->current_backend != emuenv.backend_renderer)
-#if defined(__ANDROID__) || (defined(__APPLE__) && TARGET_OS_IOS)
+#if defined(__ANDROID__)
             || (config.custom_driver_name != emuenv.renderer->current_custom_driver)
 #endif
             || (config.resolution_multiplier != emuenv.renderer->res_multiplier));
