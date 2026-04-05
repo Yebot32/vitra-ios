@@ -318,7 +318,7 @@ static void download_update(const fs::path &base_path) {
             fs::remove(vita3k_latest_ver_path);
 
             SDL_PushEvent(&event);
-#ifndef __ANDROID__
+#if !defined(__ANDROID__) && !TARGET_OS_IOS
             std::system(vita3K_batch.c_str());
 #endif
         } else {
