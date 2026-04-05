@@ -495,7 +495,7 @@ void set_config(EmuEnvState &emuenv) {
 
     // If backend render or resolution multiplier is changed when app run, reboot emu and app
     if (!emuenv.io.title_id.empty() && ((emuenv.renderer->current_backend != emuenv.backend_renderer)
-#if defined(__ANDROID__) || (defined(__APPLE__) && TARGET_OS_IOS)
+#if defined(__ANDROID__)
             || (emuenv.renderer->current_custom_driver != emuenv.cfg.current_config.custom_driver_name)
 #endif
             || (emuenv.renderer->res_multiplier != emuenv.cfg.current_config.resolution_multiplier))) {
@@ -512,7 +512,7 @@ void set_config(EmuEnvState &emuenv) {
     emuenv.renderer->set_screen_filter(emuenv.cfg.current_config.screen_filter);
     if (emuenv.renderer->current_backend == renderer::Backend::OpenGL)
         set_vsync_state(emuenv.cfg.current_config.v_sync);
-#if defined(__ANDROID__) || (defined(__APPLE__) && TARGET_OS_IOS)
+#if defined(__ANDROID__)
     if (emuenv.renderer->support_custom_drivers())
         emuenv.renderer->set_turbo_mode(emuenv.cfg.turbo_mode);
 #endif
@@ -694,7 +694,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Combo(lang.gpu["gpu"].c_str(), &emuenv.cfg.gpu_idx, gpu_list.data(), static_cast<int>(gpu_list.size()));
             SetTooltipEx(lang.gpu["select_gpu"].c_str());
 
-#if defined(__ANDROID__) || (defined(__APPLE__) && TARGET_OS_IOS)
+#if defined(__ANDROID__)
             if (emuenv.renderer->support_custom_drivers()) {
                 if (emuenv.cfg.gpu_idx == 0)
                     config.custom_driver_name = "";
