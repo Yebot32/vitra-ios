@@ -71,6 +71,21 @@ add_library(gui STATIC ${GUI_SOURCES})
 target_include_directories(gui PUBLIC include ${CMAKE_SOURCE_DIR}/vita3k)
 target_link_libraries(gui PUBLIC app codec compat config dialog emuenv ime imgui lang regmgr np)
 target_link_libraries(gui PRIVATE audio camera cubeb cppcommon ctrl kernel miniz motion psvpfsparser pugixml::pugixml stb renderer packages SDL3::SDL3 touch vkutil host::dialog concurrentqueue)
+
+# Force C++20 on this target so std::construct_at and other C++20 stdlib features
+# are available. Without this, Xcode's ALL_BUILD scheme may compile gui with
+# an older standard causing `no matching function for call to 'construct_at'`.
+set_target_properties(gui PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+)
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    set_target_properties(gui PROPERTIES
+        XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++20"
+        XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
+        XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "15.0"
+    )
+endif()
 # Link macOS frameworks for Objective-C++ code
 if(APPLE)
 	target_link_libraries(gui PRIVATE
