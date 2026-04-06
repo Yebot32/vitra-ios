@@ -36,4 +36,13 @@ patch(
     'target_include_directories(renderer PRIVATE "${CMAKE_SOURCE_DIR}/external/concurrentqueue")',
 )
 
+
+# spdlog: force external fmt so the bundled fmt 11 doesn't conflict with external fmt 12
+# tweakme.h is included by spdlog/fmt/fmt.h before the SPDLOG_FMT_EXTERNAL check.
+patch(
+    'external/spdlog/include/spdlog/tweakme.h',
+    '#pragma once',
+    '#pragma once\n\n// Vitra iOS: use external fmt (submodule) instead of spdlog bundled fmt.\n// External fmt is v12 while spdlog bundles v11 - mixing them causes compile errors.\n#ifndef SPDLOG_FMT_EXTERNAL\n#define SPDLOG_FMT_EXTERNAL\n#endif',
+)
+
 print("All patches applied.")
