@@ -85,6 +85,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
         XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
         XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "15.0"
     )
+    # _LIBCPP_DISABLE_AVAILABILITY bypasses libc++ availability guards so
+    # C++20 features like std::construct_at compile regardless of SDK version checks.
+    target_compile_definitions(gui PRIVATE _LIBCPP_DISABLE_AVAILABILITY)
 endif()
 # Link macOS frameworks for Objective-C++ code
 if(APPLE)
