@@ -109,7 +109,9 @@ jobs:
           IPHONEOS_DEPLOYMENT_TARGET=15.0 \
           CLANG_CXX_LANGUAGE_STANDARD=c++20 \
           CLANG_CXX_LIBRARY=libc++ \
-          2>&1 | xcpretty --color
+          OTHER_CPLUSPLUSFLAGS="-D_LIBCPP_DISABLE_AVAILABILITY -D_LIBCPP_REMOVE_TRANSITIVE_INCLUDES" \
+          GCC_PREPROCESSOR_DEFINITIONS="$(GCC_PREPROCESSOR_DEFINITIONS) _LIBCPP_DISABLE_AVAILABILITY=1" \
+          2>&1
         test -d "$ARCHIVE_PATH" || { echo "ERROR: archive not created"; exit 1; }
 
     - name: Package unsigned IPA
