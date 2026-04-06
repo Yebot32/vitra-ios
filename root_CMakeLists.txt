@@ -80,7 +80,10 @@ endif()
 # errors even when the per-target deployment target hint isn't picked up correctly
 # by the Xcode generator for static library sub-targets.
 if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
-    add_compile_definitions(_LIBCPP_DISABLE_AVAILABILITY)
+    add_compile_definitions(
+        _LIBCPP_DISABLE_AVAILABILITY
+        SPDLOG_FMT_EXTERNAL
+    )
 endif()
 message(STATUS "Vitra build architecture: ${ARCHITECTURE}")
 
