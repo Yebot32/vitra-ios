@@ -37,6 +37,16 @@ patch(
 )
 
 
+
+# 3. cubeb/speex: resample.c uses #include "speex/speex_resampler.h" but the
+#    include directory is only set as INTERFACE (for consumers), not PRIVATE.
+#    Add PRIVATE so the speex object library can find its own header.
+patch(
+    'external/cubeb/CMakeLists.txt',
+    '  target_include_directories(speex INTERFACE subprojects)',
+    '  target_include_directories(speex PRIVATE subprojects INTERFACE subprojects)',
+)
+
 # spdlog: force external fmt so the bundled fmt 11 doesn't conflict with external fmt 12
 # tweakme.h is included by spdlog/fmt/fmt.h before the SPDLOG_FMT_EXTERNAL check.
 patch(
