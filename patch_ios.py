@@ -47,6 +47,16 @@ patch(
     '  target_include_directories(speex PRIVATE subprojects INTERFACE subprojects)',
 )
 
+
+# 4. cubeb/speex: speex_resampler.h includes "speexdsp_types.h" when OUTSIDE_SPEEX
+#    is defined, but cubeb bundles it as "speex_config_types.h". Create a shim by
+#    patching the include in speex_resampler.h to use the actual bundled filename.
+patch(
+    'external/cubeb/subprojects/speex/speex_resampler.h',
+    '#include "speexdsp_types.h"',
+    '#include "speex_config_types.h"',
+)
+
 # spdlog: force external fmt so the bundled fmt 11 doesn't conflict with external fmt 12
 # tweakme.h is included by spdlog/fmt/fmt.h before the SPDLOG_FMT_EXTERNAL check.
 patch(
