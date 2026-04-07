@@ -57,6 +57,21 @@ patch(
     '#include "speex_config_types.h"',
 )
 
+
+# 5. cubeb/speex: speex_config_types.h uses int16_t etc without including <stdint.h>.
+#    Also arch.h includes "speex/speexdsp_types.h" (with subdir prefix) when not
+#    OUTSIDE_SPEEX — patch both to use the local file.
+patch(
+    'external/cubeb/subprojects/speex/speex_config_types.h',
+    '/* these are filled in by configure */',
+    '/* these are filled in by configure */\n#include <stdint.h>',
+)
+patch(
+    'external/cubeb/subprojects/speex/arch.h',
+    '#include "speex/speexdsp_types.h"',
+    '#include "speex_config_types.h"',
+)
+
 # spdlog: force external fmt so the bundled fmt 11 doesn't conflict with external fmt 12
 # tweakme.h is included by spdlog/fmt/fmt.h before the SPDLOG_FMT_EXTERNAL check.
 patch(
