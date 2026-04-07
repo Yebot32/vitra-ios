@@ -72,6 +72,31 @@ patch(
     '#include "speex_config_types.h"',
 )
 
+
+# 6. cubeb/speex: the FLOATING_POINT and OUTSIDE_SPEEX compile definitions from 
+#    CMakeLists don't reliably reach the OBJECT library's own compilation in Xcode.
+#    Patch resample.c to define them at the top before any includes.
+patch(
+    'external/cubeb/subprojects/speex/resample.c',
+    '/* Copyright (C) 2007-2008 Jean-Marc Valin',
+    '/* Vitra iOS: ensure required defines are set regardless of build system */\n'
+    '#ifndef OUTSIDE_SPEEX\n#define OUTSIDE_SPEEX\n#endif\n'
+    '#ifndef FLOATING_POINT\n#define FLOATING_POINT\n#endif\n'
+    '#ifndef EXPORT\n#define EXPORT\n#endif\n'
+    '#ifndef RANDOM_PREFIX\n#define RANDOM_PREFIX speex\n#endif\n\n'
+    '/* Copyright (C) 2007-2008 Jean-Marc Valin',
+)
+
+
+# 7. cubeb/speex: os_support.h is not present in cubeb's bundled speex copy.
+#    It's only needed for speex-internal malloc wrappers which aren't used
+#    when OUTSIDE_SPEEX is set. Patch it out.
+patch(
+    'external/cubeb/subprojects/speex/resample.c',
+    '#include "speex/speex_resampler.h"\n#include "arch.h"\n#include "os_support.h"',
+    '#include "speex/speex_resampler.h"\n#include "arch.h"\n/* os_support.h not present in cubeb bundle - not needed with OUTSIDE_SPEEX */',
+)
+
 # spdlog: force external fmt so the bundled fmt 11 doesn't conflict with external fmt 12
 # tweakme.h is included by spdlog/fmt/fmt.h before the SPDLOG_FMT_EXTERNAL check.
 patch(
