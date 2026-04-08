@@ -97,6 +97,52 @@ patch(
     '#include "speex/speex_resampler.h"\n#include "arch.h"\n/* os_support.h not present in cubeb bundle - not needed with OUTSIDE_SPEEX */',
 )
 
+
+# 8. spdlog compiled lib: each .cpp checks SPDLOG_COMPILED_LIB before any #include.
+#    tweakme.h can't help here. Define it directly at the top of each .cpp.
+patch(
+    'external/spdlog/src/async.cpp',
+    '#ifndef SPDLOG_COMPILED_LIB',
+    '#define SPDLOG_COMPILED_LIB  // Vitra iOS: defined here because Xcode does not propagate CMake PUBLIC defines\n#ifndef SPDLOG_COMPILED_LIB',
+    required=False,
+)
+patch(
+    'external/spdlog/src/bundled_fmtlib_format.cpp',
+    '#ifndef SPDLOG_COMPILED_LIB',
+    '#define SPDLOG_COMPILED_LIB  // Vitra iOS: defined here because Xcode does not propagate CMake PUBLIC defines\n#ifndef SPDLOG_COMPILED_LIB',
+    required=False,
+)
+patch(
+    'external/spdlog/src/cfg.cpp',
+    '#ifndef SPDLOG_COMPILED_LIB',
+    '#define SPDLOG_COMPILED_LIB  // Vitra iOS: defined here because Xcode does not propagate CMake PUBLIC defines\n#ifndef SPDLOG_COMPILED_LIB',
+    required=False,
+)
+patch(
+    'external/spdlog/src/color_sinks.cpp',
+    '#ifndef SPDLOG_COMPILED_LIB',
+    '#define SPDLOG_COMPILED_LIB  // Vitra iOS: defined here because Xcode does not propagate CMake PUBLIC defines\n#ifndef SPDLOG_COMPILED_LIB',
+    required=False,
+)
+patch(
+    'external/spdlog/src/file_sinks.cpp',
+    '#ifndef SPDLOG_COMPILED_LIB',
+    '#define SPDLOG_COMPILED_LIB  // Vitra iOS: defined here because Xcode does not propagate CMake PUBLIC defines\n#ifndef SPDLOG_COMPILED_LIB',
+    required=False,
+)
+patch(
+    'external/spdlog/src/spdlog.cpp',
+    '#ifndef SPDLOG_COMPILED_LIB',
+    '#define SPDLOG_COMPILED_LIB  // Vitra iOS: defined here because Xcode does not propagate CMake PUBLIC defines\n#ifndef SPDLOG_COMPILED_LIB',
+    required=False,
+)
+patch(
+    'external/spdlog/src/stdout_sinks.cpp',
+    '#ifndef SPDLOG_COMPILED_LIB',
+    '#define SPDLOG_COMPILED_LIB  // Vitra iOS: defined here because Xcode does not propagate CMake PUBLIC defines\n#ifndef SPDLOG_COMPILED_LIB',
+    required=False,
+)
+
 # spdlog: force external fmt so the bundled fmt 11 doesn't conflict with external fmt 12
 # tweakme.h is included by spdlog/fmt/fmt.h before the SPDLOG_FMT_EXTERNAL check.
 patch(
