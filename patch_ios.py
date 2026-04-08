@@ -102,7 +102,7 @@ patch(
 patch(
     'external/spdlog/include/spdlog/tweakme.h',
     '#pragma once',
-    '#pragma once\n\n// Vitra iOS: use external fmt (submodule) instead of spdlog bundled fmt.\n// External fmt is v12 while spdlog bundles v11 - mixing them causes compile errors.\n#ifndef SPDLOG_FMT_EXTERNAL\n#define SPDLOG_FMT_EXTERNAL\n#endif',
+    '#pragma once\n\n// Vitra iOS: use external fmt and compiled-lib mode.\n// External fmt is v12 while spdlog bundles v11 - mixing them causes compile errors.\n#ifndef SPDLOG_FMT_EXTERNAL\n#define SPDLOG_FMT_EXTERNAL\n#endif\n#ifndef SPDLOG_COMPILED_LIB\n#define SPDLOG_COMPILED_LIB\n#endif',
 )
 
 print("All patches applied.")
