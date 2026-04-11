@@ -78,6 +78,17 @@ jobs:
           -DCMAKE_C_COMPILER_LAUNCHER=sccache \
           -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
+    - name: Patch curl_config.h for iOS
+      run: |
+        CURL_CONFIG=$(find "$BUILD_DIR/_deps" -name "curl_config.h" 2>/dev/null | head -1)
+        if [ -z "$CURL_CONFIG" ]; then
+          echo "WARNING: curl_config.h not found, skipping patch"
+          exit 0
+        fi
+        echo "Patching $CURL_CONFIG"
+        # Fix curl_off_t size and sread/swrite macros for iOS
+        python3 patch_curl_config.py "$CURL_CONFIG" 
+
     - name: Build & Archive
       run: |
         XCPROJ=$(find "$BUILD_DIR" -name "*.xcodeproj" -maxdepth 2 | head -1)
