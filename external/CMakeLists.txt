@@ -420,6 +420,8 @@ if(NOT CURL_FOUND)
 	FetchContent_Declare(curl
 		GIT_REPOSITORY https://github.com/curl/curl.git
 		GIT_TAG        fd567d4f06857f4fc8e2f64ea727b1318f76ad33 # release 8.8.0
+		PATCH_COMMAND
+		    python3 <SOURCE_DIR>/../../../patch_curl_src.py <SOURCE_DIR>
 	)
 	FetchContent_MakeAvailable(curl)
 else()
