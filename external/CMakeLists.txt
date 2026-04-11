@@ -381,6 +381,42 @@ if(NOT CURL_FOUND)
 	option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 	option(BUILD_STATIC_LIBS "Build static libraries" ON)
 	set(CURL_DISABLE_TESTS ON)
+
+	# iOS cross-compilation fixes for curl:
+	# curl's CMake configure doesn't properly detect iOS platform features,
+	# resulting in wrong curl_off_t size, timeval redefinition, and missing sread/swrite.
+	if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+		# Ensure curl_off_t is 64-bit (it's long long on all 64-bit Apple platforms)
+		set(SIZEOF_CURL_OFF_T 8 CACHE STRING "Size of curl_off_t" FORCE)
+		set(HAVE_LONGLONG 1 CACHE STRING "Have long long" FORCE)
+		# Avoid timeval redefinition - iOS SDK already defines it in sys/time.h
+		set(HAVE_STRUCT_TIMEVAL 1 CACHE STRING "Have struct timeval" FORCE)
+		# Ensure socket macros are set - curl uses these for recv/send wrappers
+		set(HAVE_RECV 1 CACHE STRING "Have recv" FORCE)
+		set(HAVE_SEND 1 CACHE STRING "Have send" FORCE)
+		set(RECV_TYPE_ARG1 int CACHE STRING "" FORCE)
+		set(RECV_TYPE_ARG2 "void *" CACHE STRING "" FORCE)
+		set(RECV_TYPE_ARG3 "size_t" CACHE STRING "" FORCE)
+		set(RECV_TYPE_ARG4 int CACHE STRING "" FORCE)
+		set(RECV_TYPE_RETV "ssize_t" CACHE STRING "" FORCE)
+		set(SEND_TYPE_ARG1 int CACHE STRING "" FORCE)
+		set(SEND_TYPE_ARG2 "const void *" CACHE STRING "" FORCE)
+		set(SEND_TYPE_ARG3 "size_t" CACHE STRING "" FORCE)
+		set(SEND_TYPE_ARG4 int CACHE STRING "" FORCE)
+		set(SEND_TYPE_RETV "ssize_t" CACHE STRING "" FORCE)
+		# Disable features that require configure-time detection
+		set(CURL_DISABLE_LDAP ON CACHE BOOL "" FORCE)
+		set(CURL_DISABLE_LDAPS ON CACHE BOOL "" FORCE)
+		set(CURL_DISABLE_RTSP ON CACHE BOOL "" FORCE)
+		set(CURL_DISABLE_DICT ON CACHE BOOL "" FORCE)
+		set(CURL_DISABLE_TELNET ON CACHE BOOL "" FORCE)
+		set(CURL_DISABLE_TFTP ON CACHE BOOL "" FORCE)
+		set(CURL_DISABLE_POP3 ON CACHE BOOL "" FORCE)
+		set(CURL_DISABLE_IMAP ON CACHE BOOL "" FORCE)
+		set(CURL_DISABLE_SMTP ON CACHE BOOL "" FORCE)
+		set(CURL_DISABLE_FTP ON CACHE BOOL "" FORCE)
+	endif()
+
 	FetchContent_Declare(curl
 		GIT_REPOSITORY https://github.com/curl/curl.git
 		GIT_TAG        fd567d4f06857f4fc8e2f64ea727b1318f76ad33 # release 8.8.0
