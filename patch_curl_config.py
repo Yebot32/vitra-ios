@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Patch curl files for iOS cross-compilation. Pass path to curl_config.h."""
+"""Patch curl files for iOS cross-compilation."""
 import sys, re, os
 
 config_path = os.path.abspath(sys.argv[1])
-deps_dir = os.path.dirname(os.path.dirname(os.path.dirname(config_path)))  # _deps/
+deps_dir = os.path.dirname(os.path.dirname(os.path.dirname(config_path)))
 curl_src = os.path.join(deps_dir, 'curl-src', 'lib')
 
 # --- Patch curl_config.h ---
@@ -33,33 +33,29 @@ txt += """
 open(config_path, 'w').write(txt)
 print(f"Patched: {config_path}")
 
-# --- Patch curl_setup.h: remove the #error size checks ---
+# --- Patch curl_setup.h: remove #error size checks ---
 setup_path = os.path.join(curl_src, 'curl_setup.h')
-print(f"Looking for curl_setup.h at: {setup_path}")
 if os.path.exists(setup_path):
     s = open(setup_path).read()
-    # Remove "too small curl_off_t" error block
     s = re.sub(
-        r'#if \(CURL_SIZEOF_CURL_OFF_T < 8\)[^\n]*\n[^\n]*"too small curl_off_t"[^\n]*\n#endif',
-        '/* curl_off_t < 8 check disabled for iOS (arm64 is always 64-bit) */',
+        r'#if \(CURL_SIZEOF_CURL_OFF_T < 8\)\n#error[^\n]+\n#endif',
+        '/* curl_off_t < 8 check removed for iOS arm64 */',
         s
     )
-    # Remove "must be exactly 64 bits" error block  
     s = re.sub(
-        r'#if \(CURL_SIZEOF_CURL_OFF_T != 8\)[^\n]*\n[^\n]*"curl_off_t must be exactly[^"]*"[^\n]*\n#endif',
-        '/* curl_off_t == 8 check disabled for iOS (arm64 is always 64-bit) */',
+        r'#if \(CURL_SIZEOF_CURL_OFF_T != 8\)\n#\s*error[^\n]+\n#endif',
+        '/* curl_off_t != 8 check removed for iOS arm64 */',
         s
     )
     open(setup_path, 'w').write(s)
     print(f"Patched: {setup_path}")
 else:
-    print(f"WARNING: {setup_path} not found")
+    print(f"WARNING: not found: {setup_path}")
 
 # --- Patch curl_setup_once.h: guard timeval ---
 once_path = os.path.join(curl_src, 'curl_setup_once.h')
 if os.path.exists(once_path):
     s = open(once_path).read()
-    # Guard the timeval struct definition
     s = re.sub(
         r'(struct timeval \{[^}]+\};)',
         r'#ifndef _TIMEVAL_DEFINED\n\1\n#endif',
@@ -68,6 +64,6 @@ if os.path.exists(once_path):
     open(once_path, 'w').write(s)
     print(f"Patched: {once_path}")
 else:
-    print(f"WARNING: {once_path} not found")
+    print(f"WARNING: not found: {once_path}")
 
 print("Done.")
