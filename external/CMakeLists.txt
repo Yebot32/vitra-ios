@@ -381,6 +381,7 @@ if(NOT CURL_FOUND)
 	option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 	option(BUILD_STATIC_LIBS "Build static libraries" ON)
 	set(CURL_DISABLE_TESTS ON)
+	set(CURL_DISABLE_WEBSOCKETS ON CACHE BOOL "" FORCE)
 
 	# iOS cross-compilation fixes for curl:
 	# curl's CMake configure doesn't properly detect iOS platform features,
