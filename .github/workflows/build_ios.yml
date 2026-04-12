@@ -72,6 +72,7 @@ jobs:
           -DOPENSSL_SSL_LIBRARY="${{ env.OPENSSL_PREFIX }}/lib/libssl.a" \
           -DUSE_DISCORD_RICH_PRESENCE=OFF \
           -DUSE_VITA3K_UPDATE=OFF \
+          -DCURL_ENABLE_WEBSOCKETS=OFF \
           -DBUILD_APPIMAGE=OFF \
           -DMOLTENVK_STATIC_LIB="${{ env.MVK_LIB }}" \
           -DVITA3K_FORCE_CUSTOM_BOOST=ON \
@@ -92,6 +93,17 @@ jobs:
         find "$BUILD_DIR/_deps/curl-src" -name "*.c" -o -name "*.h" | \
           xargs touch 2>/dev/null || true
         echo "Touched curl source files to invalidate Xcode cache"
+
+    - name: Upload curl source files for debugging
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: curl-src-files
+        path: |
+          build/ios-release/_deps/curl-src/lib/curl_setup.h
+          build/ios-release/_deps/curl-src/lib/curl_setup_once.h
+          build/ios-release/_deps/curl-src/lib/ws.c
+          build/ios-release/_deps/curl-build/lib/curl_config.h
 
     - name: Build & Archive
       run: |
