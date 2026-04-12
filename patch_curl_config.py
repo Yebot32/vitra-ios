@@ -75,6 +75,9 @@ if os.path.exists(setup_path):
 #ifndef HAVE_SEND
 #define HAVE_SEND 1
 #endif
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 /* End Vitra iOS */
 
 """
