@@ -34,16 +34,18 @@ open(config_path, 'w').write(txt)
 print(f"Patched: {config_path}")
 
 # --- Patch curl_setup.h: remove #error size checks ---
+# curl's git checkout on macOS uses CRLF line endings - regex must handle \r\n
 setup_path = os.path.join(curl_src, 'curl_setup.h')
 if os.path.exists(setup_path):
     s = open(setup_path).read()
+    # Handle both LF and CRLF
     s = re.sub(
-        r'#if \(CURL_SIZEOF_CURL_OFF_T < 8\)\n#error[^\n]+\n#endif',
+        r'#if \(CURL_SIZEOF_CURL_OFF_T < 8\)\r?\n#error[^\r\n]+\r?\n#endif',
         '/* curl_off_t < 8 check removed for iOS arm64 */',
         s
     )
     s = re.sub(
-        r'#if \(CURL_SIZEOF_CURL_OFF_T != 8\)\n#\s*error[^\n]+\n#endif',
+        r'#if \(CURL_SIZEOF_CURL_OFF_T != 8\)\r?\n#\s*error[^\r\n]+\r?\n#endif',
         '/* curl_off_t != 8 check removed for iOS arm64 */',
         s
     )
