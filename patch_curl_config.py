@@ -144,4 +144,39 @@ else:
     print(f"WARNING: ws.c not found at {ws_path}")
 
 
+
+# --- Patch cf-socket.h: add missing netinet/in.h include ---
+# sockaddr.h uses struct sockaddr_in which requires <netinet/in.h>.
+# cf-socket.h includes sockaddr.h but doesn't ensure netinet/in.h is included first.
+cfsocket_path = os.path.join(curl_src, 'cf-socket.h')
+if os.path.exists(cfsocket_path):
+    raw = open(cfsocket_path, 'rb').read()
+    s = raw.replace(b'\r\n', b'\n').decode('utf-8')
+    if '#include <netinet/in.h>' not in s:
+        # Add after the first #include line
+        s = re.sub(
+            r'(#include [<"][^>"]+[>"][^\n]*\n)',
+            r'\1#include <netinet/in.h>\n#include <sys/socket.h>\n',
+            s, count=1
+        )
+        open(cfsocket_path, 'w').write(s)
+        print(f"Patched: {cfsocket_path}")
+    else:
+        print(f"cf-socket.h already has netinet/in.h")
+else:
+    # Patch sockaddr.h directly as fallback
+    sockaddr_path = os.path.join(curl_src, 'sockaddr.h')
+    if os.path.exists(sockaddr_path):
+        raw = open(sockaddr_path, 'rb').read()
+        s = raw.replace(b'\r\n', b'\n').decode('utf-8')
+        if '#include <netinet/in.h>' not in s:
+            s = re.sub(
+                r'(#include [<"][^>"]+[>"][^\n]*\n)',
+                r'\1#include <netinet/in.h>\n#include <sys/socket.h>\n',
+                s, count=1
+            )
+            open(sockaddr_path, 'w').write(s)
+            print(f"Patched: {sockaddr_path}")
+
+
 print("Done.")
