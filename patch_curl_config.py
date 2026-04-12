@@ -66,6 +66,15 @@ if os.path.exists(setup_path):
 #ifndef OS
 #define OS "iOS"
 #endif
+#ifndef HAVE_SOCKET
+#define HAVE_SOCKET 1
+#endif
+#ifndef HAVE_RECV
+#define HAVE_RECV 1
+#endif
+#ifndef HAVE_SEND
+#define HAVE_SEND 1
+#endif
 /* End Vitra iOS */
 
 """
