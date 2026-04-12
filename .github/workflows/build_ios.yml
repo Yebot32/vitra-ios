@@ -104,6 +104,7 @@ jobs:
           build/ios-release/_deps/curl-src/lib/curl_setup_once.h
           build/ios-release/_deps/curl-src/lib/ws.c
           build/ios-release/_deps/curl-build/lib/curl_config.h
+          build/ios-release/_deps/curl-build/include/curl/system.h
 
     - name: Build & Archive
       run: |
