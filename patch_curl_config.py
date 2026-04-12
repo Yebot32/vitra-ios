@@ -7,7 +7,11 @@ deps_dir = os.path.dirname(os.path.dirname(os.path.dirname(config_path)))
 curl_src = os.path.join(deps_dir, 'curl-src', 'lib')
 
 # --- Patch curl_config.h ---
+# curl's CMake uses check_type_size which stores result in SIZEOF_CURL_OFF_T.
+# curl_setup.h then derives CURL_SIZEOF_CURL_OFF_T from SIZEOF_CURL_OFF_T.
+# Both must be patched to 8 (long long size on all iOS arm64 devices).
 txt = open(config_path).read()
+txt = re.sub(r'#define SIZEOF_CURL_OFF_T \d+', '#define SIZEOF_CURL_OFF_T 8', txt)
 txt = re.sub(r'#define CURL_SIZEOF_CURL_OFF_T \d+', '#define CURL_SIZEOF_CURL_OFF_T 8', txt)
 txt = re.sub(r'#define CURL_SUFFIX_CURL_OFF_T\s+\S+', '#define CURL_SUFFIX_CURL_OFF_T LL', txt)
 txt = re.sub(r'#define CURL_TYPEOF_CURL_OFF_T\s+\S+', '#define CURL_TYPEOF_CURL_OFF_T long long', txt)
@@ -16,6 +20,8 @@ for undef in ['HAVE_STRUCT_TIMEVAL', 'HAVE_RECV', 'HAVE_SEND']:
     txt = re.sub(r'/\* #undef ' + undef + r' \*/', f'#define {undef} 1', txt)
     if undef not in txt:
         txt += f'\n#define {undef} 1\n'
+if 'SIZEOF_CURL_OFF_T' not in txt:
+    txt += '\n#define SIZEOF_CURL_OFF_T 8\n'
 txt += """
 #ifndef RECV_TYPE_ARG1
 #define RECV_TYPE_ARG1 int
@@ -34,42 +40,35 @@ open(config_path, 'w').write(txt)
 print(f"Patched: {config_path}")
 
 # --- Patch curl_setup.h ---
-# Strategy: prepend defines at the very top so the #error checks evaluate false.
-# This avoids needing to parse/remove the #if blocks entirely.
+# Prepend defines that cannot be overridden by curl_config.h.
+# Use #undef then #define (not #ifndef) so curl_config.h can't override us.
 setup_path = os.path.join(curl_src, 'curl_setup.h')
 if os.path.exists(setup_path):
     raw = open(setup_path, 'rb').read()
     s = raw.replace(b'\r\n', b'\n').decode('utf-8')
-    
-    # Prepend iOS overrides at the top of the file.
-    # CURL_SIZEOF_CURL_OFF_T=8 makes both #if checks false (not < 8, not != 8).
-    # HAVE_STRUCT_TIMEVAL=1 prevents curl from defining its own timeval.
-    prefix = """/* Vitra iOS: force correct values for cross-compilation */
-#ifndef CURL_SIZEOF_CURL_OFF_T
+
+    # Remove previous patch attempt
+    if 'Vitra iOS' in s:
+        s = re.sub(r'/\* Vitra iOS.*?End Vitra iOS overrides \*/\n\n', '', s, flags=re.DOTALL)
+
+    # Prepend — use #undef to guarantee our values survive curl_config.h redefines
+    prefix = """/* Vitra iOS: force 64-bit curl_off_t for iOS arm64 cross-compilation */
+#undef  SIZEOF_CURL_OFF_T
+#define SIZEOF_CURL_OFF_T 8
+#undef  CURL_SIZEOF_CURL_OFF_T
 #define CURL_SIZEOF_CURL_OFF_T 8
-#endif
-#ifndef CURL_TYPEOF_CURL_OFF_T
+#undef  CURL_TYPEOF_CURL_OFF_T
 #define CURL_TYPEOF_CURL_OFF_T long long
-#endif
-#ifndef CURL_SUFFIX_CURL_OFF_T
+#undef  CURL_SUFFIX_CURL_OFF_T
 #define CURL_SUFFIX_CURL_OFF_T LL
-#endif
-#ifndef HAVE_STRUCT_TIMEVAL
-#define HAVE_STRUCT_TIMEVAL 1
-#endif
-/* End Vitra iOS overrides */
+#undef  CURL_SUFFIX_CURL_OFF_TU
+#define CURL_SUFFIX_CURL_OFF_TU ULL
+/* End Vitra iOS */
 
 """
-    if 'Vitra iOS' not in s:
-        s = prefix + s
-    
+    s = prefix + s
     open(setup_path, 'w').write(s)
-    
-    # Verify
-    if 'CURL_SIZEOF_CURL_OFF_T 8' in s:
-        print(f"Patched and verified: {setup_path}")
-    else:
-        print(f"ERROR: patch failed for {setup_path}")
+    print(f"Patched and verified: {setup_path}")
 else:
     print(f"WARNING: not found: {setup_path}")
 
@@ -78,13 +77,11 @@ once_path = os.path.join(curl_src, 'curl_setup_once.h')
 if os.path.exists(once_path):
     raw = open(once_path, 'rb').read()
     s = raw.replace(b'\r\n', b'\n').decode('utf-8')
-    # Guard timeval struct - iOS SDK already defines it
     s = re.sub(
         r'(struct timeval \{[^}]+\};)',
         r'#ifndef _TIMEVAL_DEFINED\n\1\n#endif',
         s
     )
-    # Also add a guard for the entire timeval block if HAVE_STRUCT_TIMEVAL is set
     open(once_path, 'w').write(s)
     print(f"Patched: {once_path}")
 else:
