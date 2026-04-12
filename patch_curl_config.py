@@ -63,6 +63,9 @@ if os.path.exists(setup_path):
 #define CURL_SUFFIX_CURL_OFF_T LL
 #undef  CURL_SUFFIX_CURL_OFF_TU
 #define CURL_SUFFIX_CURL_OFF_TU ULL
+#ifndef OS
+#define OS "iOS"
+#endif
 /* End Vitra iOS */
 
 """
