@@ -107,4 +107,41 @@ else:
     print(f"WARNING: curl/system.h not found at {system_h_path}")
 
 
+
+# --- Patch ws.c: fix stub curl_ws_meta signature in #else block ---
+# When USE_WEBSOCKETS is not defined, curl 8.8.0 has a bug: the stub function
+# uses internal type `struct Curl_easy *` but the public header declares `CURL *`.
+# Fix the stub to use CURL* to match the public declaration.
+ws_path = os.path.join(curl_src, 'ws.c')
+if os.path.exists(ws_path):
+    raw = open(ws_path, 'rb').read()
+    s = raw.replace(b'\r\n', b'\n').decode('utf-8')
+    # Only fix the stub in the #else block (not the real implementation in #if block)
+    # The stub is at the end of the file, after the #else at ~line 1238
+    old_stub = (
+        'CURL_EXTERN const struct curl_ws_frame *curl_ws_meta(struct Curl_easy *data)\n'
+        '{\n'
+        '  (void)data;\n'
+        '  return NULL;\n'
+        '}\n'
+        '#endif /* USE_WEBSOCKETS */'
+    )
+    new_stub = (
+        'CURL_EXTERN const struct curl_ws_frame *curl_ws_meta(CURL *curl)\n'
+        '{\n'
+        '  (void)curl;\n'
+        '  return NULL;\n'
+        '}\n'
+        '#endif /* USE_WEBSOCKETS */'
+    )
+    if old_stub in s:
+        s = s.replace(old_stub, new_stub)
+        open(ws_path, 'w').write(s)
+        print(f"Patched ws.c stub: {ws_path}")
+    else:
+        print(f"WARNING: ws.c stub pattern not found")
+else:
+    print(f"WARNING: ws.c not found at {ws_path}")
+
+
 print("Done.")
