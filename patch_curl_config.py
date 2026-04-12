@@ -33,31 +33,63 @@ txt += """
 open(config_path, 'w').write(txt)
 print(f"Patched: {config_path}")
 
-# --- Patch curl_setup.h: remove #error size checks ---
-# curl's git checkout on macOS uses CRLF line endings - regex must handle \r\n
+# --- Patch curl_setup.h ---
 setup_path = os.path.join(curl_src, 'curl_setup.h')
 if os.path.exists(setup_path):
-    s = open(setup_path).read()
-    # Handle both LF and CRLF
+    raw = open(setup_path, 'rb').read()
+    # Normalize CRLF -> LF so regex works reliably
+    s = raw.replace(b'\r\n', b'\n').decode('utf-8')
+    
+    before = s
     s = re.sub(
-        r'#if \(CURL_SIZEOF_CURL_OFF_T < 8\)\r?\n#error[^\r\n]+\r?\n#endif',
+        r'#if \(CURL_SIZEOF_CURL_OFF_T < 8\)\n#error[^\n]+\n#endif',
         '/* curl_off_t < 8 check removed for iOS arm64 */',
         s
     )
     s = re.sub(
-        r'#if \(CURL_SIZEOF_CURL_OFF_T != 8\)\r?\n#\s*error[^\r\n]+\r?\n#endif',
+        r'#if \(CURL_SIZEOF_CURL_OFF_T != 8\)\n#\s*error[^\n]+\n#endif',
         '/* curl_off_t != 8 check removed for iOS arm64 */',
         s
     )
+    
+    if s == before:
+        print(f"WARNING: curl_setup.h regex did not match - trying line-based removal")
+        lines = s.splitlines()
+        out = []
+        skip_next = False
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            if 'CURL_SIZEOF_CURL_OFF_T < 8' in line or 'CURL_SIZEOF_CURL_OFF_T != 8' in line:
+                # Skip this #if, the #error, and the #endif
+                out.append('/* curl_off_t size check removed for iOS arm64 */')
+                i += 1  # skip #error line
+                if i < len(lines) and lines[i].strip().startswith('#error'):
+                    i += 1
+                if i < len(lines) and lines[i].strip() == '#endif':
+                    i += 1
+                continue
+            out.append(line)
+            i += 1
+        s = '\n'.join(out)
+        print(f"  Line-based removal applied")
+    
+    # Verify removal
+    if 'too small curl_off_t' in s or 'curl_off_t must be exactly' in s:
+        print(f"ERROR: #error lines still present in curl_setup.h!")
+    else:
+        print(f"  Verified: #error lines removed from curl_setup.h")
+    
     open(setup_path, 'w').write(s)
     print(f"Patched: {setup_path}")
 else:
     print(f"WARNING: not found: {setup_path}")
 
-# --- Patch curl_setup_once.h: guard timeval ---
+# --- Patch curl_setup_once.h ---
 once_path = os.path.join(curl_src, 'curl_setup_once.h')
 if os.path.exists(once_path):
-    s = open(once_path).read()
+    raw = open(once_path, 'rb').read()
+    s = raw.replace(b'\r\n', b'\n').decode('utf-8')
     s = re.sub(
         r'(struct timeval \{[^}]+\};)',
         r'#ifndef _TIMEVAL_DEFINED\n\1\n#endif',
