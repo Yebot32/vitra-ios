@@ -52,32 +52,10 @@ if os.path.exists(setup_path):
         s = re.sub(r'/\* Vitra iOS.*?End Vitra iOS overrides \*/\n\n', '', s, flags=re.DOTALL)
 
     # Prepend — use #undef to guarantee our values survive curl_config.h redefines
-    prefix = """/* Vitra iOS: force 64-bit curl_off_t for iOS arm64 cross-compilation */
-#undef  SIZEOF_CURL_OFF_T
-#define SIZEOF_CURL_OFF_T 8
-#undef  CURL_SIZEOF_CURL_OFF_T
-#define CURL_SIZEOF_CURL_OFF_T 8
-#undef  CURL_TYPEOF_CURL_OFF_T
-#define CURL_TYPEOF_CURL_OFF_T long long
-#undef  CURL_SUFFIX_CURL_OFF_T
-#define CURL_SUFFIX_CURL_OFF_T LL
-#undef  CURL_SUFFIX_CURL_OFF_TU
-#define CURL_SUFFIX_CURL_OFF_TU ULL
-#ifndef OS
-#define OS "iOS"
+    prefix = """/* Vitra iOS: force HAVE_CONFIG_H so curl_config.h is always included */
+#ifndef HAVE_CONFIG_H
+#define HAVE_CONFIG_H
 #endif
-#ifndef HAVE_SOCKET
-#define HAVE_SOCKET 1
-#endif
-#ifndef HAVE_RECV
-#define HAVE_RECV 1
-#endif
-#ifndef HAVE_SEND
-#define HAVE_SEND 1
-#endif
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 /* End Vitra iOS */
 
 """
