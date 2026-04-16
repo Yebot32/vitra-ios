@@ -39,7 +39,11 @@
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
 constexpr size_t TOTAL_MEM_SIZE = GiB(4);
 constexpr bool LOG_PROTECT = false;
+#ifdef NDEBUG
 constexpr bool PAGE_NAME_TRACKING = false;
+#else
+constexpr bool PAGE_NAME_TRACKING = true;
+#endif
 
 // TODO: support multiple handlers
 static AccessViolationHandler access_violation_handler;
@@ -579,7 +583,7 @@ static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
         }
     }
 
-    LOG_CRITICAL("Unhandled access to {}", log_hex(*reinterpret_cast<uint64_t *>(&info->si_addr)));
+    LOG_CRITICAL("Unhandled access to 0x{:X}", reinterpret_cast<uintptr_t>(info->si_addr));
     raise(SIGTRAP);
     return;
 }

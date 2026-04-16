@@ -257,22 +257,29 @@ bool ThreadState::run_loop() {
                 }
             }
 
-            // Run the cpu
-            do {
-                if (to_do == ThreadToDo::step) {
-                    res = step(*cpu);
+            // Run the cpu — lock is NOT held on entry, HELD on exit
+            while (true) {
+                lock.lock();
+                const bool do_step = (to_do == ThreadToDo::step);
+                if (do_step)
                     to_do = ThreadToDo::suspend;
+                lock.unlock();
 
-                } else
+                if (do_step)
+                    res = step(*cpu);
+                else
                     res = run(*cpu);
 
                 // handle svc call if this was what stopped the cpu
                 if (cpu->svc_called) {
-                    cpu->protocol->call_svc(*cpu, cpu->svc_called, read_pc(*cpu), *this);
+                    cpu->protocol->call_svc(*cpu, cpu->svc, read_pc(*cpu), *this);
                 }
-            } while (to_do == ThreadToDo::run && res == 0 && call_level == run_level && !hit_breakpoint(*cpu));
 
-            lock.lock();
+                lock.lock();
+                if (to_do != ThreadToDo::run || res != 0 || call_level != run_level || hit_breakpoint(*cpu))
+                    break;
+                lock.unlock();
+            }
 
             // Handle errors
             if (to_do == ThreadToDo::remove)
@@ -408,7 +415,10 @@ Address ThreadState::stack_top() const {
 
 void ThreadState::suspend() {
     assert(to_do == ThreadToDo::run);
-    to_do = ThreadToDo::suspend;
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        to_do = ThreadToDo::suspend;
+    }
     stop(*cpu);
 }
 

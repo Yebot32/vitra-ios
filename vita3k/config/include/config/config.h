@@ -93,7 +93,7 @@ enum ScreenshotFormat {
     code(std::string, "audio-backend", "SDL", audio_backend)                                            \
     code(int, "audio-volume", 100, audio_volume)                                                        \
     code(bool, "ngs-enable", true, ngs_enable)                                                          \
-    code(int,  "bgm-volume", 100, bgm_volume) 													        \
+    code(int,  "bgm-volume", 65, bgm_volume)                                                            \
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
     code(int, "sys-date-format", (int)SCE_SYSTEM_PARAM_DATE_FORMAT_MMDDYYYY, sys_date_format)           \
@@ -155,6 +155,39 @@ enum ScreenshotFormat {
     code(int, "keyboard-pinch-modifier", 0, keyboard_pinch_modifier)                                    \
     code(int, "keyboard-alternate-pinch-in", 0, keyboard_alternate_pinch_in)                            \
     code(int, "keyboard-alternate-pinch-out", 0, keyboard_alternate_pinch_out)                          \
+    code(int, "keyboard-button-select-alt", 0, keyboard_button_select_alt)                              \
+    code(int, "keyboard-button-start-alt", 0, keyboard_button_start_alt)                                \
+    code(int, "keyboard-button-up-alt", 0, keyboard_button_up_alt)                                      \
+    code(int, "keyboard-button-right-alt", 0, keyboard_button_right_alt)                                \
+    code(int, "keyboard-button-down-alt", 0, keyboard_button_down_alt)                                  \
+    code(int, "keyboard-button-left-alt", 0, keyboard_button_left_alt)                                  \
+    code(int, "keyboard-button-l1-alt", 0, keyboard_button_l1_alt)                                      \
+    code(int, "keyboard-button-r1-alt", 0, keyboard_button_r1_alt)                                      \
+    code(int, "keyboard-button-l2-alt", 0, keyboard_button_l2_alt)                                      \
+    code(int, "keyboard-button-r2-alt", 0, keyboard_button_r2_alt)                                      \
+    code(int, "keyboard-button-l3-alt", 0, keyboard_button_l3_alt)                                      \
+    code(int, "keyboard-button-r3-alt", 0, keyboard_button_r3_alt)                                      \
+    code(int, "keyboard-button-triangle-alt", 0, keyboard_button_triangle_alt)                          \
+    code(int, "keyboard-button-circle-alt", 0, keyboard_button_circle_alt)                              \
+    code(int, "keyboard-button-cross-alt", 0, keyboard_button_cross_alt)                                \
+    code(int, "keyboard-button-square-alt", 0, keyboard_button_square_alt)                              \
+    code(int, "keyboard-leftstick-left-alt", 0, keyboard_leftstick_left_alt)                            \
+    code(int, "keyboard-leftstick-right-alt", 0, keyboard_leftstick_right_alt)                          \
+    code(int, "keyboard-leftstick-up-alt", 0, keyboard_leftstick_up_alt)                                \
+    code(int, "keyboard-leftstick-down-alt", 0, keyboard_leftstick_down_alt)                            \
+    code(int, "keyboard-rightstick-left-alt", 0, keyboard_rightstick_left_alt)                          \
+    code(int, "keyboard-rightstick-right-alt", 0, keyboard_rightstick_right_alt)                        \
+    code(int, "keyboard-rightstick-up-alt", 0, keyboard_rightstick_up_alt)                              \
+    code(int, "keyboard-rightstick-down-alt", 0, keyboard_rightstick_down_alt)                          \
+    code(int, "keyboard-button-psbutton-alt", 0, keyboard_button_psbutton_alt)                          \
+    code(int, "keyboard-gui-toggle-gui-alt", 0, keyboard_gui_toggle_gui_alt)                            \
+    code(int, "keyboard-gui-fullscreen-alt", 0, keyboard_gui_fullscreen_alt)                            \
+    code(int, "keyboard-gui-toggle-touch-alt", 0, keyboard_gui_toggle_touch_alt)                        \
+    code(int, "keyboard-toggle-texture-replacement-alt", 0, keyboard_toggle_texture_replacement_alt)    \
+    code(int, "keyboard-take-screenshot-alt", 0, keyboard_take_screenshot_alt)                          \
+    code(int, "keyboard-pinch-modifier-alt", 0, keyboard_pinch_modifier_alt)                            \
+    code(int, "keyboard-alternate-pinch-in-alt", 0, keyboard_alternate_pinch_in_alt)                    \
+    code(int, "keyboard-alternate-pinch-out-alt", 0, keyboard_alternate_pinch_out_alt)                 \
     code(std::string, "user-id", std::string{}, user_id)                                                \
     code(bool, "user-auto-connect", false, auto_user_login)                                             \
     code(std::string, "user-lang", std::string{}, user_lang)                                            \
