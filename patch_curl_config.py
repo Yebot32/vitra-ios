@@ -56,6 +56,7 @@ if os.path.exists(setup_path):
 #ifndef HAVE_CONFIG_H
 #define HAVE_CONFIG_H
 #endif
+#define BUILDING_LIBCURL
 /* End Vitra iOS */
 
 """
