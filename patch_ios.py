@@ -151,4 +151,22 @@ patch(
     '#pragma once\n\n// Vitra iOS: use external fmt and compiled-lib mode.\n// External fmt is v12 while spdlog bundles v11 - mixing them causes compile errors.\n#ifndef SPDLOG_FMT_EXTERNAL\n#define SPDLOG_FMT_EXTERNAL\n#endif\n#ifndef SPDLOG_COMPILED_LIB\n#define SPDLOG_COMPILED_LIB\n#endif',
 )
 
+
+# SDL: SDL_uikitopenglview.m uses __weak properties.
+# Without ARC (which SDL doesn't enable globally), __weak fails.
+# Remove __weak from the property declaration - not critical for Vita3K's Metal renderer.
+patch(
+    'external/sdl/src/video/uikit/SDL_uikitopenglview.m',
+    '@property (nonatomic, weak)',
+    '@property (nonatomic, unsafe_unretained)',
+    required=False,
+)
+patch(
+    'external/sdl/src/video/uikit/SDL_uikitopenglview.m',
+    '@property(nonatomic, weak)',
+    '@property(nonatomic, unsafe_unretained)',
+    required=False,
+)
+
+
 print("All patches applied.")
