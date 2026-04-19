@@ -94,20 +94,6 @@ jobs:
           xargs touch 2>/dev/null || true
         echo "Touched curl source files to invalidate Xcode cache"
 
-    - name: Upload curl source files for debugging
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: curl-src-files
-        path: |
-          build/ios-release/_deps/curl-src/lib/curl_setup.h
-          build/ios-release/_deps/curl-src/lib/curl_setup_once.h
-          build/ios-release/_deps/curl-src/lib/ws.c
-          build/ios-release/_deps/curl-build/lib/curl_config.h
-          build/ios-release/_deps/curl-src/include/curl/system.h
-          build/ios-release/_deps/curl-src/lib/cf-socket.h
-          build/ios-release/_deps/curl-src/lib/sockaddr.h
-
     - name: Build & Archive
       run: |
         XCPROJ=$(find "$BUILD_DIR" -name "*.xcodeproj" -maxdepth 2 | head -1)
